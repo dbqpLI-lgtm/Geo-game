@@ -1,5 +1,25 @@
-import React from 'react';
-import { Globe2, Flag, MapPin, Mountain, Sparkles, Award, Zap, Building2, Eye, Tag, Navigation, Coins, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Globe2,
+  Flag,
+  MapPin,
+  Mountain,
+  Sparkles,
+  Award,
+  Zap,
+  Building2,
+  Eye,
+  Tag,
+  Navigation,
+  Coins,
+  Calendar,
+  LogIn,
+  LogOut,
+  User,
+  ShieldCheck,
+  ChevronDown,
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export type GameMode =
   | 'daily'
@@ -20,6 +40,7 @@ interface GeoNavbarProps {
   onSelectMode: (mode: GameMode) => void;
   xpPoints: number;
   streak: number;
+  onOpenAuth: () => void;
 }
 
 export const GeoNavbar: React.FC<GeoNavbarProps> = ({
@@ -27,7 +48,19 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
   onSelectMode,
   xpPoints,
   streak,
+  onOpenAuth,
 }) => {
+  const { currentUser, userProfile, logout } = useAuth();
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  const getRankTitle = (xp: number) => {
+    if (xp >= 2500) return 'Atlas Grandmaster';
+    if (xp >= 1000) return 'Master Navigator';
+    if (xp >= 500) return 'Global Explorer';
+    if (xp >= 150) return 'Junior Cartographer';
+    return 'Novice Scout';
+  };
+
   const modes: Array<{ id: GameMode; label: string; icon: React.ReactNode; badge?: string }> = [
     { id: 'daily', label: 'Daily Challenge', icon: <Calendar className="w-4 h-4 text-amber-400" />, badge: '+250 XP' },
     { id: 'countries', label: '196 Countries', icon: <Globe2 className="w-4 h-4 text-indigo-400" />, badge: 'All' },
@@ -43,10 +76,13 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
     { id: 'ai-custom', label: 'AI Custom Quiz', icon: <Sparkles className="w-4 h-4 text-purple-400" />, badge: 'Gemini' },
   ];
 
+  const displayName = userProfile?.displayName || currentUser?.displayName || (currentUser?.isAnonymous ? 'Guest Explorer' : 'Explorer');
+  const userInitials = displayName.slice(0, 2).toUpperCase();
+
   return (
     <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 py-3">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Brand & Stats */}
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* Brand & Mobile Stats / Sign-in */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
@@ -66,12 +102,33 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
             </div>
           </div>
 
-          {/* XP & Streak on Mobile */}
+          {/* Mobile Right Action */}
           <div className="flex md:hidden items-center gap-2">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold">
               <Award className="w-3.5 h-3.5" />
               <span>{xpPoints} XP</span>
             </div>
+
+            {currentUser ? (
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-sky-500 text-white font-bold text-xs flex items-center justify-center border border-indigo-400/40"
+              >
+                {userProfile?.photoURL ? (
+                  <img src={userProfile.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  userInitials
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={onOpenAuth}
+                className="px-2.5 py-1 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-indigo-600/30"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -105,17 +162,93 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
           })}
         </div>
 
-        {/* Desktop XP & Streak Banner */}
+        {/* Desktop XP & Profile / Sign-in */}
         <div className="hidden md:flex items-center gap-3">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold shadow-sm">
             <Award className="w-4 h-4 text-amber-400" />
             <span>{xpPoints} XP</span>
           </div>
+
           {streak > 0 && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold shadow-sm">
               <Zap className="w-4 h-4 text-rose-400 fill-current" />
               <span>{streak} Streak</span>
             </div>
+          )}
+
+          {/* User Profile or Sign In Button */}
+          {currentUser ? (
+            <div className="relative">
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-2.5 p-1 pr-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 text-left transition-all"
+              >
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden border border-indigo-400/40">
+                  {userProfile?.photoURL ? (
+                    <img src={userProfile.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    userInitials
+                  )}
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-white max-w-[100px] truncate leading-tight">
+                    {displayName}
+                  </div>
+                  <div className="text-[10px] text-indigo-300 font-semibold leading-tight">
+                    {getRankTitle(xpPoints)}
+                  </div>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
+              </button>
+
+              {/* Profile Dropdown */}
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in zoom-in-95">
+                  <div className="px-2 py-2 border-b border-slate-800/80 mb-2">
+                    <div className="text-xs font-bold text-white truncate">{displayName}</div>
+                    <div className="text-[11px] text-slate-400 truncate">
+                      {currentUser.isAnonymous ? 'Guest Account' : currentUser.email}
+                    </div>
+                    <div className="mt-2 inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                      <ShieldCheck className="w-3 h-3" />
+                      <span>{getRankTitle(xpPoints)}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between px-2 py-1.5 text-slate-300">
+                      <span>Total Geography XP</span>
+                      <span className="font-mono font-bold text-amber-400">{xpPoints} XP</span>
+                    </div>
+                    <div className="flex items-center justify-between px-2 py-1.5 text-slate-300">
+                      <span>Daily Streak</span>
+                      <span className="font-mono font-bold text-rose-400">{streak} Days</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 mt-2 border-t border-slate-800/80">
+                    <button
+                      onClick={async () => {
+                        setProfileDropdownOpen(false);
+                        await logout();
+                      }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors font-semibold"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAuth}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
           )}
         </div>
       </div>

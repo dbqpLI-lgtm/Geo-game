@@ -4,7 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { GeoNavbar, GameMode } from './components/GeoNavbar';
+import { AuthModal } from './components/AuthModal';
 import { DailyChallenge } from './components/DailyChallenge';
 import { CountryNamingQuiz } from './components/CountryNamingQuiz';
 import { WorldCapitalsQuiz } from './components/WorldCapitalsQuiz';
@@ -17,34 +19,71 @@ import { StateNamingQuiz } from './components/StateNamingQuiz';
 import { FlagSprintQuiz } from './components/FlagSprintQuiz';
 import { PhysicalGeoQuiz } from './components/PhysicalGeoQuiz';
 import { AICustomQuiz } from './components/AICustomQuiz';
-import { Globe2, Flag, MapPin, Mountain, Zap, Sparkles, Award, Compass, Building2, Eye, Tag, Navigation, Coins, Calendar, Flame } from 'lucide-react';
+import {
+  Globe2,
+  Flag,
+  MapPin,
+  Mountain,
+  Zap,
+  Sparkles,
+  Award,
+  Compass,
+  Building2,
+  Eye,
+  Tag,
+  Navigation,
+  Coins,
+  Calendar,
+  LogIn,
+  CloudCheck,
+} from 'lucide-react';
 
-export default function App() {
+function AppContent() {
+  const { currentUser, userProfile, syncXPAndStreak } = useAuth();
   const [currentMode, setCurrentMode] = useState<GameMode>('countries');
   const [xpPoints, setXpPoints] = useState<number>(0);
   const [streak, setStreak] = useState<number>(1);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Load XP from localStorage
+  // Sync state from local storage or cloud profile
   useEffect(() => {
     try {
       const saved = localStorage.getItem('geomaster_xp');
       if (saved) {
         setXpPoints(parseInt(saved, 10));
       }
-    } catch {
-      // ignore
-    }
+      const savedStreak = localStorage.getItem('geomaster_daily_streak');
+      if (savedStreak) {
+        setStreak(parseInt(savedStreak, 10));
+      }
+    } catch {}
   }, []);
+
+  // When cloud profile updates, sync local XP if cloud has higher value
+  useEffect(() => {
+    if (userProfile) {
+      if (userProfile.xpPoints > xpPoints) {
+        setXpPoints(userProfile.xpPoints);
+      }
+      if (userProfile.dailyStreak > streak) {
+        setStreak(userProfile.dailyStreak);
+      }
+    }
+  }, [userProfile]);
 
   const handleEarnXP = (amount: number) => {
     setXpPoints((prev) => {
       const updated = prev + amount;
+      const nextStreak = streak + 1;
+      setStreak(nextStreak);
       try {
         localStorage.setItem('geomaster_xp', updated.toString());
+        localStorage.setItem('geomaster_daily_streak', nextStreak.toString());
       } catch {}
+      // Sync to Firebase Cloud if authenticated
+      syncXPAndStreak(updated, nextStreak);
       return updated;
     });
-    setStreak((prev) => prev + 1);
   };
 
   const modeCards: Array<{
@@ -161,12 +200,37 @@ export default function App() {
         onSelectMode={(mode) => setCurrentMode(mode)}
         xpPoints={xpPoints}
         streak={streak}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+        {/* Unauthenticated Cloud Sync Teaser */}
+        {!currentUser && (
+          <div className="bg-gradient-to-r from-indigo-950/40 via-slate-900/60 to-purple-950/40 border border-indigo-500/20 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <div>
+                <span className="font-bold text-white">Save your Geography XP & Streaks:</span>{' '}
+                <span className="text-slate-400">
+                  Sign in with Google or Email to sync achievements across all devices.
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center gap-1.5 transition-all shadow-sm"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
+          </div>
+        )}
+
         {/* Quick Mode Jump Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
           {modeCards.map((item) => {
             const isActive = currentMode === item.id;
             return (
@@ -209,6 +273,9 @@ export default function App() {
         {currentMode === 'ai-custom' && <AICustomQuiz onEarnXP={handleEarnXP} />}
       </main>
 
+      {/* Auth Modal */}
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-800/80 bg-slate-950/80 py-6 px-4 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -216,16 +283,29 @@ export default function App() {
             <Compass className="w-4 h-4 text-indigo-400" />
             <span className="font-semibold text-slate-300">GeoMaster Complete Atlas & Quiz Arena</span>
             <span>•</span>
-            <span>Countries, Capitals, Outlines, GeoGuessr, Flags & Nicknames</span>
+            <span>196 Sovereign Nations, Capitals, Flags & Outlines</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400">
             <span className="flex items-center gap-1 font-mono">
               <Award className="w-3.5 h-3.5 text-amber-400" /> {xpPoints} Total XP
             </span>
-            <span>Powered by Gemini 3.8 Flash</span>
+            {currentUser && (
+              <span className="text-emerald-400 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Cloud Synced
+              </span>
+            )}
+            <span>Powered by Gemini 3.8 Flash & Firebase</span>
           </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

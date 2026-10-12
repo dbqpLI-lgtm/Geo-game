@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with game progress, total XP, and daily streak",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user ID matching auth.uid"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User avatar URL"
+        },
+        "xpPoints": {
+          "type": "number",
+          "description": "Total earned XP"
+        },
+        "dailyStreak": {
+          "type": "number",
+          "description": "Current daily challenge streak"
+        },
+        "lastDailyCompletedDate": {
+          "type": "string",
+          "description": "Last completed daily challenge date (YYYY-MM-DD)"
+        },
+        "completedChallenges": {
+          "type": "array",
+          "description": "IDs of completed game challenges"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of account creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last update"
+        }
+      },
+      "required": ["id", "xpPoints", "dailyStreak"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Private user profiles storing XP and progress"
+    }
+  }
+}
