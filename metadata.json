@@ -1,0 +1,6 @@
+{
+  "name": "GeoMaster - The Ultimate Geography Quiz & Flag Studio",
+  "description": "Comprehensive geography trivia: name every country, interactive flag maker & painter, US & world state quizzes, capitals, physical geography, and AI custom quizzes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
