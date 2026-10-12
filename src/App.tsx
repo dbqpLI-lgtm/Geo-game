@@ -144,8 +144,8 @@ function AppContent() {
     },
     {
       id: 'flag-maker',
-      label: 'Flag Maker Studio',
-      desc: 'Paint & Construct Flags',
+      label: 'Draw the Flag',
+      desc: 'Random Country • Freehand/Paint',
       icon: <Flag className="w-5 h-5 text-emerald-400" />,
       color: 'hover:border-emerald-500/50',
       activeBorder: 'border-emerald-500 bg-emerald-950/30',
@@ -168,8 +168,8 @@ function AppContent() {
     },
     {
       id: 'flag-sprint',
-      label: 'Flag Blitz',
-      desc: 'Rapid Flashcard Sprint',
+      label: 'Name the Flag',
+      desc: 'Gives Flag • Name Country',
       icon: <Zap className="w-5 h-5 text-rose-400" />,
       color: 'hover:border-rose-500/50',
       activeBorder: 'border-rose-500 bg-rose-950/30',

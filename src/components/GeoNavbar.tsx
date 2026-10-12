@@ -68,10 +68,10 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
     { id: 'culture', label: 'Money & Faith', icon: <Coins className="w-4 h-4 text-amber-400" />, badge: 'Triad' },
     { id: 'outlines', label: 'Outlines', icon: <Eye className="w-4 h-4 text-teal-400" />, badge: 'Shapes' },
     { id: 'geoguessr', label: 'GeoGuessr', icon: <Navigation className="w-4 h-4 text-emerald-400" />, badge: 'Map' },
-    { id: 'flag-maker', label: 'Flag Maker', icon: <Flag className="w-4 h-4 text-emerald-400" />, badge: 'Build' },
+    { id: 'flag-maker', label: 'Draw the Flag', icon: <Flag className="w-4 h-4 text-emerald-400" />, badge: 'Draw' },
     { id: 'nicknames', label: 'Nicknames', icon: <Tag className="w-4 h-4 text-orange-400" /> },
     { id: 'states', label: 'States', icon: <MapPin className="w-4 h-4 text-amber-400" />, badge: '50 States' },
-    { id: 'flag-sprint', label: 'Flag Blitz', icon: <Zap className="w-4 h-4 text-rose-400" /> },
+    { id: 'flag-sprint', label: 'Name the Flag', icon: <Zap className="w-4 h-4 text-rose-400" />, badge: 'Guess' },
     { id: 'physical-geo', label: 'Physical Wonders', icon: <Mountain className="w-4 h-4 text-cyan-400" /> },
     { id: 'ai-custom', label: 'AI Custom Quiz', icon: <Sparkles className="w-4 h-4 text-purple-400" />, badge: 'Gemini' },
   ];

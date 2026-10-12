@@ -1,5 +1,22 @@
-import React, { useState } from 'react';
-import { Flag, Palette, Sparkles, CheckCircle2, RotateCcw, Lightbulb, Trophy, HelpCircle, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Palette,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  Lightbulb,
+  Trophy,
+  HelpCircle,
+  Eye,
+  EyeOff,
+  Shuffle,
+  Brush,
+  Eraser,
+  Flame,
+  ArrowRight,
+  ShieldCheck,
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { FLAG_CHALLENGES, COLOR_SWATCHES, FlagChallenge } from '../data/geographyData';
 
@@ -8,10 +25,16 @@ interface FlagMakerStudioProps {
 }
 
 export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) => {
-  const [selectedChallengeIndex, setSelectedChallengeIndex] = useState(0);
-  const currentChallenge: FlagChallenge = FLAG_CHALLENGES[selectedChallengeIndex];
+  // Random country challenge selection (no manual country picking list with spoiled flag emojis)
+  const [currentChallenge, setCurrentChallenge] = useState<FlagChallenge>(() => {
+    const randomIndex = Math.floor(Math.random() * FLAG_CHALLENGES.length);
+    return FLAG_CHALLENGES[randomIndex];
+  });
 
-  // Studio State
+  const [activeTab, setActiveTab] = useState<'build' | 'freehand'>('build');
+  const [streak, setStreak] = useState(0);
+
+  // Studio Construction State
   const [layout, setLayout] = useState<FlagChallenge['requiredLayout']>('horizontal-3');
   const [stripes, setStripes] = useState<string[]>(['#FFFFFF', '#FFFFFF', '#FFFFFF']);
   const [activeSlot, setActiveSlot] = useState<number>(0);
@@ -20,13 +43,26 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [showHint, setShowHint] = useState(false);
-  const [showTargetPeek, setShowTargetPeek] = useState(false);
+  const [showSolutionPeek, setShowSolutionPeek] = useState(false);
 
-  // Switch challenge
-  const handleSelectChallenge = (index: number) => {
-    setSelectedChallengeIndex(index);
-    const target = FLAG_CHALLENGES[index];
-    // Reset canvas to blank white
+  // Freehand Canvas State
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [brushColor, setBrushColor] = useState('#ED2939');
+  const [brushSize, setBrushSize] = useState(12);
+  const [isEraser, setIsEraser] = useState(false);
+
+  // Roll a new random country challenge
+  const handleNextRandomChallenge = () => {
+    let nextIndex = Math.floor(Math.random() * FLAG_CHALLENGES.length);
+    // Try to ensure it is different from current
+    if (FLAG_CHALLENGES.length > 1 && FLAG_CHALLENGES[nextIndex].id === currentChallenge.id) {
+      nextIndex = (nextIndex + 1) % FLAG_CHALLENGES.length;
+    }
+    const nextChallenge = FLAG_CHALLENGES[nextIndex];
+    setCurrentChallenge(nextChallenge);
+
+    // Reset studio state
     setLayout('horizontal-3');
     setStripes(['#FFFFFF', '#FFFFFF', '#FFFFFF']);
     setActiveSlot(0);
@@ -35,8 +71,27 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
     setIsCorrect(false);
     setFeedbackMessage('');
     setShowHint(false);
-    setShowTargetPeek(false);
+    setShowSolutionPeek(false);
+
+    // Clear freehand canvas if present
+    clearCanvas();
   };
+
+  const clearCanvas = () => {
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'freehand' && canvasRef.current) {
+      clearCanvas();
+    }
+  }, [activeTab]);
 
   const handlePaintColor = (hex: string) => {
     const updated = [...stripes];
@@ -45,48 +100,63 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
     setHasVerified(false);
   };
 
+  // Compare color similarity
+  const hexDistance = (hex1: string, hex2: string) => {
+    const parse = (h: string) => {
+      const clean = h.replace('#', '');
+      return [
+        parseInt(clean.slice(0, 2), 16) || 0,
+        parseInt(clean.slice(2, 4), 16) || 0,
+        parseInt(clean.slice(4, 6), 16) || 0,
+      ];
+    };
+    const [r1, g1, b1] = parse(hex1);
+    const [r2, g2, b2] = parse(hex2);
+    return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2);
+  };
+
+  const isColorClose = (hex1: string, hex2: string) => {
+    return hexDistance(hex1, hex2) < 95; // generous threshold for shades of red/blue/gold
+  };
+
   // Check user flag against target
   const handleVerifyFlag = () => {
     setHasVerified(true);
     const target = currentChallenge;
 
-    // 1. Check layout
-    if (layout !== target.requiredLayout) {
+    // Check layout
+    // Allow horizontal-3-emblem to match horizontal-3 if emblem is correct
+    let layoutMatches = layout === target.requiredLayout;
+    if (target.requiredLayout === 'horizontal-3-emblem' && layout === 'horizontal-3' && emblem !== 'none') {
+      layoutMatches = true;
+    }
+
+    if (!layoutMatches) {
       setIsCorrect(false);
-      setFeedbackMessage(`Layout mismatch! ${target.countryName}'s flag does not use this geometry. Look closely at the stripe orientation.`);
+      setFeedbackMessage(
+        `Geometry mismatch! The flag of ${target.countryName} uses a different layout (e.g. stripes orientation or cross). Try switching layouts!`
+      );
       return;
     }
 
-    // 2. Check colors
-    // Normalize hex comparisons
-    const normalizeHex = (hex: string) => hex.toLowerCase();
+    // Check colors
     let colorsMatch = true;
-
     if (target.requiredLayout === 'horizontal-2') {
-      if (
-        normalizeHex(stripes[0]) !== normalizeHex(target.colors[0]) ||
-        normalizeHex(stripes[1]) !== normalizeHex(target.colors[1])
-      ) {
+      if (!isColorClose(stripes[0], target.colors[0]) || !isColorClose(stripes[1], target.colors[1])) {
         colorsMatch = false;
       }
     } else if (target.requiredLayout === 'center-circle') {
-      if (
-        normalizeHex(stripes[0]) !== normalizeHex(target.colors[0]) || // background field
-        normalizeHex(stripes[1]) !== normalizeHex(target.colors[1])   // circle disc
-      ) {
+      if (!isColorClose(stripes[0], target.colors[0]) || !isColorClose(stripes[1], target.colors[1])) {
         colorsMatch = false;
       }
     } else if (target.requiredLayout === 'nordic-cross') {
-      if (
-        normalizeHex(stripes[0]) !== normalizeHex(target.colors[0]) || // field
-        normalizeHex(stripes[1]) !== normalizeHex(target.colors[1])   // cross
-      ) {
+      if (!isColorClose(stripes[0], target.colors[0]) || !isColorClose(stripes[1], target.colors[1])) {
         colorsMatch = false;
       }
     } else {
       // 3 stripes
       for (let i = 0; i < 3; i++) {
-        if (target.colors[i] && normalizeHex(stripes[i]) !== normalizeHex(target.colors[i])) {
+        if (target.colors[i] && !isColorClose(stripes[i], target.colors[i])) {
           colorsMatch = false;
           break;
         }
@@ -95,47 +165,125 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
 
     if (!colorsMatch) {
       setIsCorrect(false);
-      setFeedbackMessage(`Color mismatch! One or more segments do not match the official colors of ${target.countryName}. Check your palette!`);
+      setFeedbackMessage(
+        `Color mismatch! One or more colors do not match the official flag of ${target.countryName}. Check your pigment choices!`
+      );
       return;
     }
 
-    // 3. Check emblem if needed
-    if (target.hasEmblem && target.emblemType) {
-      if (emblem !== target.emblemType) {
-        setIsCorrect(false);
-        setFeedbackMessage(`Almost there! ${target.countryName}'s flag requires a specific central emblem.`);
-        return;
-      }
+    // Check emblem if required
+    if (target.hasEmblem && emblem === 'none') {
+      setIsCorrect(false);
+      setFeedbackMessage(
+        `Almost there! The flag of ${target.countryName} has a central symbol/emblem. Try adding an emblem!`
+      );
+      return;
     }
 
-    // If passed all tests: PERFECT!
+    // Success!
     setIsCorrect(true);
-    setFeedbackMessage(`🎉 100% PERFECT MATCH! You successfully built the official flag of ${target.countryName}!`);
-    onEarnXP(100);
+    setFeedbackMessage(`Perfect 100% Match! You have masterfully constructed the flag of ${target.countryName}!`);
+    setStreak((prev) => prev + 1);
+    setShowSolutionPeek(true);
+    onEarnXP(60 + streak * 10);
 
     confetti({
-      particleCount: 90,
+      particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899'],
+      colors: target.colors,
     });
   };
 
-  const handleReset = () => {
-    setStripes(['#FFFFFF', '#FFFFFF', '#FFFFFF']);
-    setEmblem('none');
-    setHasVerified(false);
-    setIsCorrect(false);
-    setFeedbackMessage('');
+  // Freehand Canvas Event Handlers
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    setIsDrawing(true);
+    draw(e);
   };
 
-  // Render the interactive flag based on layout state
-  const renderInteractiveFlag = () => {
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) ctx.beginPath();
+    }
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing && e.type !== 'mousedown' && e.type !== 'touchstart') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    let clientX = 0;
+    let clientY = 0;
+
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (isEraser) {
+      ctx.strokeStyle = '#FFFFFF';
+    } else {
+      ctx.strokeStyle = brushColor;
+    }
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  // Render flag geometry preview
+  const renderFlagCanvas = () => {
     switch (layout) {
-      case 'vertical-3':
-      case 'vertical-3-emblem':
+      case 'horizontal-3':
+      case 'horizontal-3-emblem':
         return (
-          <div className="relative w-full h-full flex rounded-xl overflow-hidden shadow-2xl border border-slate-700">
+          <div className="relative w-full h-full flex flex-col rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80">
+            {[0, 1, 2].map((slot) => (
+              <div
+                key={slot}
+                onClick={() => setActiveSlot(slot)}
+                className={`flex-1 w-full cursor-pointer transition-all relative group ${
+                  activeSlot === slot ? 'ring-4 ring-inset ring-sky-400 z-10' : ''
+                }`}
+                style={{ backgroundColor: stripes[slot] }}
+              >
+                <span className="absolute top-1 left-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition">
+                  Stripe {slot + 1}
+                </span>
+              </div>
+            ))}
+            {emblem !== 'none' && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                {emblem === 'sun' && <div className="w-16 h-16 rounded-full bg-amber-400 shadow-md flex items-center justify-center text-amber-950 font-bold text-xs">☀️</div>}
+                {emblem === 'star' && <div className="text-4xl text-amber-400 drop-shadow">★</div>}
+                {emblem === 'circle' && <div className="w-14 h-14 rounded-full bg-red-600 shadow-md" />}
+                {emblem === 'cross' && <div className="text-4xl text-white font-bold drop-shadow">✚</div>}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'vertical-3':
+        return (
+          <div className="relative w-full h-full flex flex-row rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80">
             {[0, 1, 2].map((slot) => (
               <div
                 key={slot}
@@ -150,45 +298,12 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
                 </span>
               </div>
             ))}
-            {emblem === 'sun' && (
+            {emblem !== 'none' && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-4xl filter drop-shadow">☀️</span>
-              </div>
-            )}
-            {emblem === 'star' && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-4xl text-yellow-300 filter drop-shadow">★</span>
-              </div>
-            )}
-          </div>
-        );
-
-      case 'horizontal-3':
-      case 'horizontal-3-emblem':
-        return (
-          <div className="relative w-full h-full flex flex-col rounded-xl overflow-hidden shadow-2xl border border-slate-700">
-            {[0, 1, 2].map((slot) => (
-              <div
-                key={slot}
-                onClick={() => setActiveSlot(slot)}
-                className={`flex-1 w-full cursor-pointer transition-all relative group ${
-                  activeSlot === slot ? 'ring-4 ring-inset ring-sky-400 z-10' : ''
-                }`}
-                style={{ backgroundColor: stripes[slot] }}
-              >
-                <span className="absolute top-2 left-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition">
-                  Stripe {slot + 1}
-                </span>
-              </div>
-            ))}
-            {emblem === 'sun' && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-4xl filter drop-shadow">☀️</span>
-              </div>
-            )}
-            {emblem === 'star' && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-4xl text-yellow-300 filter drop-shadow">★</span>
+                {emblem === 'sun' && <div className="w-16 h-16 rounded-full bg-amber-400 shadow-md flex items-center justify-center text-amber-950 font-bold text-xs">☀️</div>}
+                {emblem === 'star' && <div className="text-4xl text-amber-400 drop-shadow">★</div>}
+                {emblem === 'circle' && <div className="w-14 h-14 rounded-full bg-red-600 shadow-md" />}
+                {emblem === 'cross' && <div className="text-4xl text-white font-bold drop-shadow">✚</div>}
               </div>
             )}
           </div>
@@ -196,7 +311,7 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
 
       case 'horizontal-2':
         return (
-          <div className="relative w-full h-full flex flex-col rounded-xl overflow-hidden shadow-2xl border border-slate-700">
+          <div className="relative w-full h-full flex flex-col rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80">
             {[0, 1].map((slot) => (
               <div
                 key={slot}
@@ -217,7 +332,7 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
       case 'center-circle':
         return (
           <div
-            className={`relative w-full h-full flex items-center justify-center rounded-xl overflow-hidden shadow-2xl border border-slate-700 cursor-pointer ${
+            className={`relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80 cursor-pointer ${
               activeSlot === 0 ? 'ring-4 ring-inset ring-sky-400' : ''
             }`}
             style={{ backgroundColor: stripes[0] }}
@@ -242,7 +357,7 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
       case 'nordic-cross':
         return (
           <div
-            className={`relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-slate-700 cursor-pointer ${
+            className={`relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80 cursor-pointer ${
               activeSlot === 0 ? 'ring-4 ring-inset ring-sky-400' : ''
             }`}
             style={{ backgroundColor: stripes[0] }}
@@ -283,233 +398,441 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header Banner */}
+      {/* Top Banner with RANDOM Country Challenge (NO flag emoji spoil) */}
       <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900/80 to-slate-950 border border-emerald-500/30 rounded-3xl p-6 backdrop-blur-xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1.5">
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> Flag Construction Studio
+              <Sparkles className="w-3.5 h-3.5" /> Flag Drawing Studio
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-semibold">
-              Challenge {selectedChallengeIndex + 1} of {FLAG_CHALLENGES.length}
+            <span
+              className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                currentChallenge.difficulty === 'Easy'
+                  ? 'bg-emerald-500/20 text-emerald-300'
+                  : currentChallenge.difficulty === 'Medium'
+                  ? 'bg-amber-500/20 text-amber-300'
+                  : 'bg-rose-500/20 text-rose-300'
+              }`}
+            >
+              {currentChallenge.difficulty} Challenge
             </span>
           </div>
-          <h2 className="text-2xl font-black text-white">
-            Construct the Flag of {currentChallenge.countryName}
+
+          {/* Explicit prompt with country name ONLY — no emoji spoil! */}
+          <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
+            <span>Draw the Flag of</span>
+            <span className="text-emerald-400 underline decoration-emerald-500/40 underline-offset-4">
+              {currentChallenge.countryName}
+            </span>
           </h2>
           <p className="text-xs text-slate-400 mt-1 max-w-xl">
-            {currentChallenge.description} Pick the layout, click each section to apply pigment, and add emblems to recreate history!
+            Can you recreate the official national banner from memory? Pick the geometry and pigment, or switch to freehand drawing!
           </p>
         </div>
 
-        {/* Challenge selector pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none max-w-md">
-          {FLAG_CHALLENGES.map((ch, idx) => (
-            <button
-              key={ch.id}
-              onClick={() => handleSelectChallenge(idx)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                selectedChallengeIndex === idx
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400/40'
-                  : 'bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700'
-              }`}
-            >
-              <span>{ch.flagEmoji}</span>
-              <span>{ch.countryName}</span>
-            </button>
-          ))}
+        {/* Action Controls: Shuffle Next Country & Streak */}
+        <div className="flex items-center gap-3">
+          {streak > 0 && (
+            <div className="px-3 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <Flame className="w-4 h-4 text-orange-400 fill-current" />
+              <span>{streak} Streak</span>
+            </div>
+          )}
+
+          <button
+            onClick={handleNextRandomChallenge}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs transition-all shadow-md active:scale-95 hover:border-emerald-500/40"
+          >
+            <Shuffle className="w-4 h-4 text-emerald-400" />
+            <span>Next Random Country</span>
+          </button>
         </div>
       </div>
 
-      {/* Main Studio Arena */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Flag Canvas (7 Cols) */}
-        <div className="lg:col-span-7 bg-slate-900/70 border border-slate-800/80 rounded-3xl p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Flag className="w-5 h-5 text-emerald-400" />
-                <h3 className="font-bold text-white text-base">Flag Drawing Board</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowTargetPeek(!showTargetPeek)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition"
-                >
-                  {showTargetPeek ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  <span>{showTargetPeek ? 'Hide Target' : 'Peek Target Flag'}</span>
-                </button>
-                <button
-                  onClick={() => setShowHint(!showHint)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 text-amber-300 hover:text-amber-200 text-xs font-semibold transition"
-                >
-                  <Lightbulb className="w-3.5 h-3.5" />
-                  <span>Hint</span>
-                </button>
-              </div>
-            </div>
+      {/* Mode Switcher: Geometry & Paint vs Freehand Canvas */}
+      <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('build')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'build'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Palette className="w-4 h-4" />
+            <span>Geometry & Paint Studio</span>
+          </button>
 
-            {/* Target peek banner */}
-            {showTargetPeek && (
-              <div className="mb-4 p-3 rounded-2xl bg-slate-950 border border-slate-700 flex items-center justify-between animate-fadeIn">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">{currentChallenge.flagEmoji}</span>
-                  <div>
-                    <div className="text-xs font-bold text-white">Official Flag of {currentChallenge.countryName}</div>
-                    <div className="text-[11px] text-slate-400">{currentChallenge.hint}</div>
-                  </div>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-mono">Reference</span>
-              </div>
+          <button
+            onClick={() => setActiveTab('freehand')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'freehand'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Brush className="w-4 h-4" />
+            <span>Freehand Drawing Canvas</span>
+          </button>
+        </div>
+
+        {/* Peek Solution & Need a Hint buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowHint(!showHint)}
+            className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition"
+          >
+            <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+            <span>{showHint ? 'Hide Hint' : 'Need a Hint?'}</span>
+          </button>
+
+          <button
+            onClick={() => setShowSolutionPeek(!showSolutionPeek)}
+            className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition"
+          >
+            {showSolutionPeek ? (
+              <>
+                <EyeOff className="w-3.5 h-3.5 text-rose-400" />
+                <span>Hide Solution Flag</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-3.5 h-3.5 text-sky-400" />
+                <span>Peek Real Flag</span>
+              </>
             )}
+          </button>
+        </div>
+      </div>
 
-            {/* Hint Box */}
-            {showHint && (
-              <div className="mb-4 p-3 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-xs text-amber-200 flex items-center gap-2 animate-fadeIn">
-                <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>{currentChallenge.hint}</span>
-              </div>
-            )}
-
-            {/* The Live Interactive Flag Container */}
-            <div className="w-full max-w-md mx-auto aspect-[3/2] my-4">
-              {renderInteractiveFlag()}
-            </div>
-
-            <p className="text-center text-xs text-slate-400 mt-2">
-              💡 Click on any stripe or section to select it, then choose a color from the palette below!
-            </p>
+      {/* Expandable Hint Box */}
+      {showHint && (
+        <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-3 animate-in fade-in">
+          <HelpCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="font-bold text-amber-300">Flag Construction Clue:</div>
+            <div>{currentChallenge.hint}</div>
+            <div className="text-[11px] text-amber-400/80">Colors used: {currentChallenge.colorToleranceNames.join(', ')}</div>
           </div>
+        </div>
+      )}
 
-          {/* Action Buttons & Feedback */}
-          <div className="mt-6 pt-4 border-t border-slate-800/80">
+      {/* Solution Peek Reveal Box (Only shown if toggled or after solving!) */}
+      {showSolutionPeek && (
+        <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-white text-xs flex items-center justify-between gap-4 animate-in fade-in">
+          <div className="flex items-center gap-4">
+            <span className="text-5xl filter drop-shadow">{currentChallenge.flagEmoji}</span>
+            <div>
+              <div className="font-bold text-base text-white">Official Flag of {currentChallenge.countryName}</div>
+              <p className="text-slate-400 text-xs mt-0.5">{currentChallenge.description}</p>
+            </div>
+          </div>
+          <button
+            onClick={handleNextRandomChallenge}
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow"
+          >
+            <span>Try Another Country</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* MAIN VIEW: Geometry & Paint Studio */}
+      {activeTab === 'build' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Flag Preview Canvas Area */}
+          <div className="lg:col-span-7 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl shadow-xl flex flex-col items-center justify-center space-y-4">
+            <div className="w-full max-w-md aspect-[3/2] relative p-1">{renderFlagCanvas()}</div>
+
+            <div className="text-center">
+              <span className="text-xs text-slate-400">
+                Click any stripe or field inside the flag above to select it, then tap a pigment below!
+              </span>
+            </div>
+
+            {/* Verification Result Message */}
             {hasVerified && (
               <div
-                className={`mb-4 p-4 rounded-2xl border text-xs leading-relaxed flex items-center gap-3 ${
+                className={`w-full p-4 rounded-2xl border text-xs flex items-center gap-3 animate-in fade-in ${
                   isCorrect
-                    ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200'
-                    : 'bg-rose-950/60 border-rose-500/40 text-rose-200'
+                    ? 'bg-emerald-950/50 border-emerald-500 text-emerald-200'
+                    : 'bg-rose-950/50 border-rose-500 text-rose-200'
                 }`}
               >
                 {isCorrect ? (
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                 ) : (
-                  <HelpCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                  <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
                 )}
-                <span>{feedbackMessage}</span>
+                <div className="flex-1 font-semibold">{feedbackMessage}</div>
+                {isCorrect && (
+                  <button
+                    onClick={handleNextRandomChallenge}
+                    className="shrink-0 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition"
+                  >
+                    Next Flag
+                  </button>
+                )}
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-3">
+            {/* Test & Verify Button */}
+            <div className="w-full pt-2 flex items-center justify-between gap-3">
               <button
-                onClick={handleReset}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
+                onClick={() => {
+                  setStripes(['#FFFFFF', '#FFFFFF', '#FFFFFF']);
+                  setEmblem('none');
+                  setHasVerified(false);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5 transition"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>Clear Canvas</span>
+                <span>Reset Canvas</span>
               </button>
 
               <button
                 onClick={handleVerifyFlag}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition active:scale-95"
+                className="flex-1 max-w-xs py-2.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-500 hover:to-sky-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition active:scale-95"
               >
-                <Trophy className="w-4 h-4" />
-                <span>Test & Verify Flag (+100 XP)</span>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Verify & Test Flag (+60 XP)</span>
               </button>
             </div>
           </div>
+
+          {/* Controls: Geometry, Palette, & Emblems */}
+          <div className="lg:col-span-5 space-y-5">
+            {/* 1. Layout Geometry Selector */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-5 backdrop-blur-xl">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5">
+                Step 1: Choose Flag Geometry
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'horizontal-3', label: '3 Horizontal Stripes' },
+                  { id: 'vertical-3', label: '3 Vertical Stripes' },
+                  { id: 'horizontal-2', label: '2 Horizontal Stripes' },
+                  { id: 'nordic-cross', label: 'Nordic Cross' },
+                  { id: 'center-circle', label: 'Field + Center Disc' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setLayout(item.id as FlagChallenge['requiredLayout']);
+                      setHasVerified(false);
+                    }}
+                    className={`p-2.5 rounded-xl text-xs font-bold border text-left transition-all ${
+                      layout === item.id
+                        ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 ring-1 ring-emerald-400/40'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Color Palette */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-5 backdrop-blur-xl">
+              <div className="flex items-center justify-between mb-2.5">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Step 2: Paint Active Slot ({activeSlot + 1})
+                </label>
+                <span className="text-[11px] font-mono text-slate-400">
+                  Selected: {stripes[activeSlot]}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {COLOR_SWATCHES.map((swatch) => (
+                  <button
+                    key={swatch.hex}
+                    onClick={() => handlePaintColor(swatch.hex)}
+                    title={swatch.name}
+                    className="group flex flex-col items-center gap-1 p-2 rounded-xl border border-slate-800 hover:border-slate-600 bg-slate-950/60 transition-all hover:scale-105 active:scale-95"
+                  >
+                    <div
+                      className="w-7 h-7 rounded-lg shadow-md border border-white/10 group-hover:ring-2 group-hover:ring-white/40"
+                      style={{ backgroundColor: swatch.hex }}
+                    />
+                    <span className="text-[9px] font-medium text-slate-400 truncate w-full text-center">
+                      {swatch.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Emblem / Symbol Overlay */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-5 backdrop-blur-xl">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5">
+                Step 3: Central Emblem (Optional)
+              </label>
+              <div className="grid grid-cols-5 gap-2">
+                {[
+                  { id: 'none', label: 'None', icon: '—' },
+                  { id: 'sun', label: 'Sun', icon: '☀️' },
+                  { id: 'star', label: 'Star', icon: '★' },
+                  { id: 'circle', label: 'Circle', icon: '🔴' },
+                  { id: 'cross', label: 'Cross', icon: '✚' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setEmblem(item.id as any);
+                      setHasVerified(false);
+                    }}
+                    className={`py-2 px-1 rounded-xl text-center border text-xs font-bold transition-all ${
+                      emblem === item.id
+                        ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 ring-1 ring-emerald-400/40'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="text-base mb-0.5">{item.icon}</div>
+                    <div className="text-[10px]">{item.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* Right: Studio Controls (5 Cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Step 1: Layout Picker */}
-          <div className="bg-slate-900/70 border border-slate-800/80 rounded-3xl p-5 backdrop-blur-xl shadow-xl">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-              <span>Step 1:</span> Choose Flag Layout
-            </h4>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'vertical-3', label: 'Vertical Tricolor', desc: '3 vertical stripes (France, Italy)' },
-                { id: 'horizontal-3', label: 'Horizontal Tricolor', desc: '3 horizontal stripes (Germany, Netherlands)' },
-                { id: 'horizontal-2', label: 'Horizontal Bicolor', desc: '2 horizontal stripes (Ukraine, Poland)' },
-                { id: 'center-circle', label: 'Central Disc', desc: 'Center circle on field (Japan, Bangladesh)' },
-                { id: 'nordic-cross', label: 'Nordic Cross', desc: 'Scandinavian cross (Sweden, Norway)' },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setLayout(item.id as any)}
-                  className={`p-3 rounded-2xl border text-left transition-all ${
-                    layout === item.id
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                      : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                  }`}
-                >
-                  <div className="text-xs font-bold text-white mb-0.5">{item.label}</div>
-                  <div className="text-[10px] text-slate-400 line-clamp-1">{item.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Step 2: Color Palette */}
-          <div className="bg-slate-900/70 border border-slate-800/80 rounded-3xl p-5 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-sky-400" />
-                <span>Step 2:</span> Paint Selected Segment ({activeSlot + 1})
-              </h4>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/40">
-                Active Slot {activeSlot + 1}
-              </span>
+      ) : (
+        /* FREEHAND DRAWING CANVAS MODE */
+        <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Brush className="w-4 h-4 text-emerald-400" />
+                <span>Draw the Flag of {currentChallenge.countryName} Freehand</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Use the canvas brush to draw stripes, shields, emblems, and colors from memory!
+              </p>
             </div>
 
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-              {COLOR_SWATCHES.map((swatch) => (
-                <button
-                  key={swatch.hex}
-                  onClick={() => handlePaintColor(swatch.hex)}
-                  title={swatch.name}
-                  className="flex flex-col items-center gap-1 p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 hover:border-slate-600 transition active:scale-95 group"
-                >
-                  <div
-                    className="w-8 h-8 rounded-lg shadow border border-white/20 transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: swatch.hex }}
-                  />
-                  <span className="text-[9px] font-medium text-slate-400 truncate max-w-full">
-                    {swatch.name}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Step 3: Emblems */}
-          <div className="bg-slate-900/70 border border-slate-800/80 rounded-3xl p-5 backdrop-blur-xl shadow-xl">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-              <span>Step 3:</span> Optional Emblem Overlay
-            </h4>
+            {/* Canvas Toolbar */}
             <div className="flex items-center gap-2">
-              {[
-                { id: 'none', label: 'None' },
-                { id: 'sun', label: '☀️ Sun of May' },
-                { id: 'star', label: '★ Star' },
-              ].map((emb) => (
-                <button
-                  key={emb.id}
-                  onClick={() => setEmblem(emb.id as any)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                    emblem === emb.id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-slate-950/60 text-slate-400 border border-slate-800 hover:text-white'
-                  }`}
-                >
-                  {emb.label}
-                </button>
-              ))}
+              <button
+                onClick={() => setIsEraser(false)}
+                className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                  !isEraser
+                    ? 'bg-emerald-600 text-white shadow'
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Brush className="w-4 h-4" />
+                <span>Brush</span>
+              </button>
+
+              <button
+                onClick={() => setIsEraser(true)}
+                className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                  isEraser
+                    ? 'bg-rose-600 text-white shadow'
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Eraser className="w-4 h-4" />
+                <span>Eraser</span>
+              </button>
+
+              <button
+                onClick={clearCanvas}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1 transition"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Clear</span>
+              </button>
             </div>
           </div>
+
+          {/* Color Palette & Brush Size for Freehand */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-slate-950/80 border border-slate-800">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+              <span className="text-xs text-slate-400 font-bold uppercase mr-1">Colors:</span>
+              {[
+                '#ED2939', // Red
+                '#002654', // Navy
+                '#0057B7', // Blue
+                '#008751', // Green
+                '#FFD700', // Gold/Yellow
+                '#000000', // Black
+                '#FFFFFF', // White
+                '#FF883E', // Orange
+                '#74ACDF', // Sky Blue
+              ].map((color) => (
+                <button
+                  key={color}
+                  onClick={() => {
+                    setBrushColor(color);
+                    setIsEraser(false);
+                  }}
+                  className={`w-7 h-7 rounded-lg shadow-sm border border-white/20 transition-transform ${
+                    brushColor === color && !isEraser ? 'scale-125 ring-2 ring-white' : 'hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Brush Size:</span>
+              <input
+                type="range"
+                min="4"
+                max="36"
+                value={brushSize}
+                onChange={(e) => setBrushSize(parseInt(e.target.value, 10))}
+                className="w-24 accent-emerald-500"
+              />
+              <span className="text-xs font-mono text-slate-300 w-6">{brushSize}px</span>
+            </div>
+          </div>
+
+          {/* Canvas Board */}
+          <div className="w-full flex justify-center py-2">
+            <div className="w-full max-w-2xl aspect-[3/2] border-2 border-slate-700 rounded-2xl overflow-hidden shadow-2xl bg-white cursor-crosshair">
+              <canvas
+                ref={canvasRef}
+                width={600}
+                height={400}
+                className="w-full h-full touch-none"
+                onMouseDown={startDrawing}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onMouseMove={draw}
+                onTouchStart={startDrawing}
+                onTouchEnd={stopDrawing}
+                onTouchMove={draw}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <button
+              onClick={() => setShowSolutionPeek(true)}
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-bold flex items-center gap-2 transition"
+            >
+              <Eye className="w-4 h-4" />
+              <span>Compare with Official Flag</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onEarnXP(50);
+                confetti({ particleCount: 70, spread: 60 });
+                handleNextRandomChallenge();
+              }}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-500 hover:to-sky-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Done! Next Random Challenge (+50 XP)</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

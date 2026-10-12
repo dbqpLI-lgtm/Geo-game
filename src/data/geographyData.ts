@@ -1287,6 +1287,90 @@ export const FLAG_CHALLENGES: FlagChallenge[] = [
     emblemType: 'sun',
     description: 'Create the Argentine flag with the Sun of May.',
     hint: 'Light Blue top and bottom, White center with the golden Sun of May.'
+  },
+  {
+    id: 'austria',
+    countryName: 'Austria',
+    flagEmoji: '🇦🇹',
+    difficulty: 'Easy',
+    requiredLayout: 'horizontal-3',
+    colors: ['#ED2939', '#FFFFFF', '#ED2939'],
+    colorToleranceNames: ['Red', 'White', 'Red'],
+    hasEmblem: false,
+    description: 'One of the oldest flags in the world, dating to Duke Leopold V.',
+    hint: 'Three horizontal stripes: Red on top and bottom, White in the middle.'
+  },
+  {
+    id: 'belgium',
+    countryName: 'Belgium',
+    flagEmoji: '🇧🇪',
+    difficulty: 'Easy',
+    requiredLayout: 'vertical-3',
+    colors: ['#000000', '#FDDA24', '#EF3340'],
+    colorToleranceNames: ['Black', 'Yellow', 'Red'],
+    hasEmblem: false,
+    description: 'Construct the Belgian tricolor (3 vertical stripes).',
+    hint: 'From hoist to fly (left to right): Black, Yellow, Red.'
+  },
+  {
+    id: 'colombia',
+    countryName: 'Colombia',
+    flagEmoji: '🇨🇴',
+    difficulty: 'Medium',
+    requiredLayout: 'horizontal-3',
+    colors: ['#FCD116', '#003893', '#CE1126'],
+    colorToleranceNames: ['Yellow', 'Blue', 'Red'],
+    hasEmblem: false,
+    description: 'Build the flag of Colombia (Yellow, Blue, and Red).',
+    hint: 'Top stripe is Yellow, middle is Blue, bottom is Red.'
+  },
+  {
+    id: 'finland',
+    countryName: 'Finland',
+    flagEmoji: '🇫🇮',
+    difficulty: 'Medium',
+    requiredLayout: 'nordic-cross',
+    colors: ['#FFFFFF', '#003580'],
+    colorToleranceNames: ['White', 'Blue'],
+    hasEmblem: false,
+    description: 'Assemble the Siniristilippu (Blue Cross flag of Finland).',
+    hint: 'A deep blue Nordic cross on a pure white field.'
+  },
+  {
+    id: 'nigeria',
+    countryName: 'Nigeria',
+    flagEmoji: '🇳🇬',
+    difficulty: 'Easy',
+    requiredLayout: 'vertical-3',
+    colors: ['#008751', '#FFFFFF', '#008751'],
+    colorToleranceNames: ['Green', 'White', 'Green'],
+    hasEmblem: false,
+    description: 'Paint the flag of Africa’s most populous nation.',
+    hint: 'Three equal vertical stripes: Green, White, and Green.'
+  },
+  {
+    id: 'indonesia',
+    countryName: 'Indonesia',
+    flagEmoji: '🇮🇩',
+    difficulty: 'Easy',
+    requiredLayout: 'horizontal-2',
+    colors: ['#FF0000', '#FFFFFF'],
+    colorToleranceNames: ['Red', 'White'],
+    hasEmblem: false,
+    description: 'Construct Sang Saka Merah Putih (The Red and White).',
+    hint: 'Red on top, White on the bottom (the opposite of Poland).'
+  },
+  {
+    id: 'chad',
+    countryName: 'Chad',
+    flagEmoji: '🇹🇩',
+    difficulty: 'Medium',
+    requiredLayout: 'vertical-3',
+    colors: ['#00205B', '#FFCD00', '#C60C30'],
+    colorToleranceNames: ['Blue', 'Gold', 'Red'],
+    hasEmblem: false,
+    description: 'Assemble the flag of Chad (vertical tricolor).',
+    hint: 'Three vertical stripes: Indigo Blue on the left, Gold in center, Red on right.'
   }
 ];
 
