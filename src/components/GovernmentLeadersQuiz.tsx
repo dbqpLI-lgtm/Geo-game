@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { GOVERNMENT_LEADER_ROSTERS } from '../data/governmentLeaders';
 import { useGameSettings } from '../context/GameSettingsContext';
 import { matchesLeaderFirstAndLastName } from '../utils/leaderNameMatching';
+import { getWrongGuessLimit } from '../utils/guessAttempts';
 
 interface GovernmentLeadersQuizProps {
   onEarnXP: (amount: number) => void;
@@ -23,6 +24,10 @@ export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ on
   const [foundLeaders, setFoundLeaders] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState('');
   const [isRevealed, setIsRevealed] = useState(false);
+  const [wrongGuesses, setWrongGuesses] = useState(0);
+  const guessLimit = getWrongGuessLimit(difficulty);
+  const guessLimitReached = wrongGuesses >= guessLimit;
+  const guessesRemaining = Math.max(0, guessLimit - wrongGuesses);
 
   const roster = useMemo(
     () => GOVERNMENT_LEADER_ROSTERS.find((item) => item.country === selectedCountry)!,
@@ -33,7 +38,7 @@ export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ on
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!answer.trim() || isRevealed || isComplete) return;
+    if (!answer.trim() || isRevealed || isComplete || guessLimitReached) return;
 
     const guess = normalize(answer);
     const matches = roster.leaders.filter((leader) => {
@@ -57,7 +62,15 @@ export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ on
             : [leader.name, ...leader.aliases, leader.name.trim().split(/\s+/).at(-1) ?? '']
                 .some((name) => normalize(name) === guess)),
       );
+      if (!alreadyFound) {
+        const nextWrongGuesses = wrongGuesses + 1;
+        setWrongGuesses(nextWrongGuesses);
+        if (nextWrongGuesses >= guessLimit) setIsRevealed(true);
+      }
       setMessage(
+        !alreadyFound && wrongGuesses + 1 >= guessLimit
+          ? `Guess limit reached. The remaining names are revealed.`
+          :
         difficulty === 'hard' && !alreadyFound
           ? 'Hard mode requires the leader’s full first and last name.'
           : alreadyFound
@@ -100,6 +113,7 @@ export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ on
     setAnswer('');
     setMessage('');
     setIsRevealed(false);
+    setWrongGuesses(0);
   };
 
   return (
@@ -157,7 +171,7 @@ export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ on
               autoComplete="off"
               value={answer}
               onChange={(event) => setAnswer(event.target.value)}
-              disabled={isComplete || isRevealed}
+              disabled={isComplete || isRevealed || guessLimitReached}
               placeholder={
                 difficulty === 'hard'
                   ? `Type first and last name of a prime minister of ${roster.country}...`
@@ -175,12 +189,14 @@ export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ on
           </button>
         </form>
         <p aria-live="polite" className="mt-2 min-h-5 text-sm text-slate-400">{message}</p>
+        <p className="text-xs text-slate-500">{guessesRemaining} wrong guesses left for this roster.</p>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setIsRevealed((value) => !value)}
-            className="rounded-xl border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 transition-colors hover:border-violet-400 hover:text-white"
+            onClick={() => setIsRevealed((value) => guessLimitReached || !value)}
+            disabled={guessLimitReached}
+            className="rounded-xl border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 transition-colors hover:border-violet-400 hover:text-white disabled:opacity-50"
           >
             {isRevealed ? 'Hide answers' : 'Reveal answers'}
           </button>

@@ -30,6 +30,7 @@ import { ALL_197_COUNTRIES } from '../data/all197Countries';
 import { FlagImage } from './FlagImage';
 import { useGameSettings } from '../context/GameSettingsContext';
 import { matchesLeaderFirstAndLastName } from '../utils/leaderNameMatching';
+import { getWrongGuessLimit } from '../utils/guessAttempts';
 
 interface WorldLeadersQuizProps {
   onEarnXP: (amount: number) => void;
@@ -107,6 +108,7 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
 
   // Input & guess state
   const [inputText, setInputText] = useState<string>('');
+  const [wrongGuesses, setWrongGuesses] = useState(0);
   const [guessedNumbers, setGuessedNumbers] = useState<Set<number>>(new Set());
   const [revealedNumbers, setRevealedNumbers] = useState<Set<number>>(new Set());
   const [hintedNumbers, setHintedNumbers] = useState<Set<number>>(new Set());
@@ -135,6 +137,8 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
   const [countrySearchQuery, setCountrySearchQuery] = useState<string>('');
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const guessLimit = getWrongGuessLimit(difficulty);
+  const guessesRemaining = Math.max(0, guessLimit - wrongGuesses);
 
   // Timer configuration based on difficulty and leader count
   const defaultSeconds = useMemo(() => {
@@ -151,6 +155,7 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
     setIsCountryModalOpen(false);
     setIsLoadingCountry(true);
     setInputText('');
+    setWrongGuesses(0);
     setGuessedNumbers(new Set());
     setRevealedNumbers(new Set());
     setHintedNumbers(new Set());
@@ -271,6 +276,7 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
   // Reset current game
   const handleResetGame = () => {
     setInputText('');
+    setWrongGuesses(0);
     setGuessedNumbers(new Set());
     setRevealedNumbers(new Set());
     setHintedNumbers(new Set());
@@ -285,16 +291,17 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
   };
 
   // Check input match against leaders
-  const checkAnswer = (rawInput: string) => {
+  const checkAnswer = (rawInput: string): boolean | null => {
+    if (isGameOver) return null;
     const cleaned = normalizeStr(rawInput);
-    if (!cleaned || cleaned.length < 2) return;
+    if (!cleaned || cleaned.length < 2) return null;
 
     setDisambiguationMessage(null);
 
     if (gamePlayMode === 'chronological') {
       // In chronological mode, must guess the current target leader
       const targetLeader = activeCountryData.leaders[currentChronoIndex];
-      if (!targetLeader) return;
+      if (!targetLeader) return null;
 
       const matches =
         (difficulty === 'hard'
@@ -328,10 +335,11 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
           nextIdx++;
         }
         setCurrentChronoIndex(nextIdx);
+        return true;
       } else if (difficulty === 'hard') {
         setDisambiguationMessage('Hard mode requires the leader’s full first and last name.');
       }
-      return;
+      return false;
     }
 
     // Free Recall mode: search across ALL unguessed leaders
@@ -356,6 +364,7 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
       const leader = matchedLeaders[0];
       handleLeaderGuessed(leader);
       setInputText('');
+      return true;
     } else if (matchedLeaders.length > 1) {
       const surnames = matchedLeaders.map((leader) => {
         return normalizeStr(getLeaderSurname(leader.name));
@@ -368,15 +377,18 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
       if (inputIsSharedSurname) {
         handleLeadersGuessed(matchedLeaders);
         setInputText('');
+        return true;
       } else {
         const names = matchedLeaders.map((leader) => leader.name).join(', ');
         setDisambiguationMessage(
           `Multiple leaders match ("${rawInput}"): ${names}. Enter a full name to distinguish them.`
         );
+        return null;
       }
     } else if (difficulty === 'hard') {
       setDisambiguationMessage('Hard mode requires the leader’s full first and last name.');
     }
+    return false;
   };
 
   // Handle a successfully matched leader
@@ -749,13 +761,25 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
               ref={inputRef}
               type="text"
               value={inputText}
+              disabled={isGameOver}
               onChange={(e) => {
                 setInputText(e.target.value);
                 checkAnswer(e.target.value);
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  checkAnswer(inputText);
+                  e.preventDefault();
+                  if (checkAnswer(inputText) === false) {
+                    const nextWrongGuesses = wrongGuesses + 1;
+                    setWrongGuesses(nextWrongGuesses);
+                    setInputText('');
+                    setDisambiguationMessage(
+                      nextWrongGuesses >= guessLimit
+                        ? 'Guess limit reached. The remaining leaders are revealed.'
+                        : `That leader was not recognized. ${guessLimit - nextWrongGuesses} guesses left.`,
+                    );
+                    if (nextWrongGuesses >= guessLimit) handleGiveUp();
+                  }
                 }
               }}
               placeholder={
@@ -766,6 +790,9 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
               autoFocus
               className="w-full bg-slate-950/90 border border-slate-700 rounded-2xl py-3.5 pl-12 pr-32 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all shadow-inner"
             />
+            <span className="absolute -bottom-5 left-1 text-[11px] text-slate-500">
+              {guessesRemaining} wrong guesses left for this roster
+            </span>
             {inputText && (
               <button
                 onClick={() => setInputText('')}

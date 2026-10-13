@@ -1,19 +1,26 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapPin, Search, CheckCircle2, RotateCcw, Eye, Trophy, Sparkles, Building2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { COUNTRY_DIVISIONS, StateItem } from '../data/geographyData';
+import { useGameSettings } from '../context/GameSettingsContext';
+import { getWrongGuessLimit } from '../utils/guessAttempts';
 
 interface StateNamingQuizProps {
   onEarnXP: (amount: number) => void;
 }
 
 export const StateNamingQuiz: React.FC<StateNamingQuizProps> = ({ onEarnXP }) => {
+  const { difficulty } = useGameSettings();
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>('US');
   const [inputVal, setInputVal] = useState('');
   const [foundStates, setFoundStates] = useState<Set<string>>(new Set());
   const [isRevealed, setIsRevealed] = useState(false);
   const [lastGuessedState, setLastGuessedState] = useState<string | null>(null);
   const [quizMode, setQuizMode] = useState<'name-states' | 'capitals-trivia'>('name-states');
+  const [wrongGuesses, setWrongGuesses] = useState(0);
+  const [wrongGuessMessage, setWrongGuessMessage] = useState('');
+  const guessLimit = getWrongGuessLimit(difficulty);
+  const guessesRemaining = Math.max(0, guessLimit - wrongGuesses);
 
   // Capital Trivia state
   const [capitalQuestionIndex, setCapitalQuestionIndex] = useState(0);
@@ -21,6 +28,11 @@ export const StateNamingQuiz: React.FC<StateNamingQuizProps> = ({ onEarnXP }) =>
   const [capitalAnswerStatus, setCapitalAnswerStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setWrongGuesses(0);
+    setWrongGuessMessage('');
+  }, [difficulty]);
 
   const activeDivision = COUNTRY_DIVISIONS[selectedCountryCode] || COUNTRY_DIVISIONS.US;
   const items = activeDivision.items;
@@ -36,6 +48,8 @@ export const StateNamingQuiz: React.FC<StateNamingQuizProps> = ({ onEarnXP }) =>
     setCapitalQuestionIndex(0);
     setSelectedCapitalChoice(null);
     setCapitalAnswerStatus('idle');
+    setWrongGuesses(0);
+    setWrongGuessMessage('');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,10 +88,26 @@ export const StateNamingQuiz: React.FC<StateNamingQuizProps> = ({ onEarnXP }) =>
     }
   };
 
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter' || !inputVal.trim() || isRevealed) return;
+    event.preventDefault();
+    const nextWrongGuesses = wrongGuesses + 1;
+    setWrongGuesses(nextWrongGuesses);
+    setInputVal('');
+    setWrongGuessMessage(
+      nextWrongGuesses >= guessLimit
+        ? 'Guess limit reached — all divisions are revealed.'
+        : `That division was not recognized. ${guessLimit - nextWrongGuesses} guesses left.`,
+    );
+    if (nextWrongGuesses >= guessLimit) setIsRevealed(true);
+  };
+
   const handleReset = () => {
     setFoundStates(new Set());
     setIsRevealed(false);
     setInputVal('');
+    setWrongGuesses(0);
+    setWrongGuessMessage('');
   };
 
   const handleRevealAll = () => {
@@ -197,10 +227,14 @@ export const StateNamingQuiz: React.FC<StateNamingQuizProps> = ({ onEarnXP }) =>
                   type="text"
                   value={inputVal}
                   onChange={handleInputChange}
+                  onKeyDown={handleInputKeyDown}
                   disabled={isRevealed}
                   placeholder={`Type any state/province in ${activeDivision.countryName}...`}
                   className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-slate-950/90 border border-amber-500/40 text-white placeholder-slate-500 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-inner"
                 />
+                <p className="mt-2 text-xs text-slate-400" aria-live="polite">
+                  {guessesRemaining} wrong guesses left{wrongGuessMessage ? ` · ${wrongGuessMessage}` : ''}
+                </p>
                 {lastGuessedState && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30 animate-bounce">
                     <CheckCircle2 className="w-3.5 h-3.5" />

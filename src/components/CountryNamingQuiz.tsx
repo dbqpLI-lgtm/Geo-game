@@ -5,6 +5,7 @@ import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
 import { getCurrencyDisplayName } from '../utils/currencyName';
 import { selectCountryQuizPool } from '../utils/countryQuizPool';
+import { getWrongGuessLimit } from '../utils/guessAttempts';
 import { FlagImage } from './FlagImage';
 
 const CountryDiscoveryMap = React.lazy(() =>
@@ -27,6 +28,8 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
   const [isRevealed, setIsRevealed] = useState(false);
   const [selectedCountryModal, setSelectedCountryModal] = useState<CountryFullItem | null>(null);
   const [lastGuessedCountry, setLastGuessedCountry] = useState<string | null>(null);
+  const [wrongGuesses, setWrongGuesses] = useState(0);
+  const [wrongGuessMessage, setWrongGuessMessage] = useState('');
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,6 +46,8 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
   }, [selectedContinent, difficulty]);
 
   const totalCount = availableCountries.length;
+  const guessLimit = getWrongGuessLimit(difficulty);
+  const guessesRemaining = Math.max(0, guessLimit - wrongGuesses);
   const foundCount = availableCountries.filter((c) => foundCountries.has(c.code)).length;
   const progressPercent = Math.round((foundCount / totalCount) * 100) || 0;
 
@@ -52,6 +57,8 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
     setIsGameActive(false);
     setInputGuess('');
     setTimeLeft(defaultSeconds);
+    setWrongGuesses(0);
+    setWrongGuessMessage('');
   }, [difficulty]);
 
   // Timer logic
@@ -107,6 +114,20 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
     }
   };
 
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter' || !inputGuess.trim() || isRevealed) return;
+    event.preventDefault();
+    const nextWrongGuesses = wrongGuesses + 1;
+    setWrongGuesses(nextWrongGuesses);
+    setInputGuess('');
+    setWrongGuessMessage(
+      nextWrongGuesses >= guessLimit
+        ? 'Guess limit reached — all countries are revealed.'
+        : `That country was not recognized. ${guessLimit - nextWrongGuesses} guesses left.`,
+    );
+    if (nextWrongGuesses >= guessLimit) setIsRevealed(true);
+  };
+
   const handleStartGame = (timed: boolean) => {
     setIsTimedMode(timed);
     setTimeLeft(defaultSeconds);
@@ -114,6 +135,8 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
     setIsRevealed(false);
     setIsGameActive(true);
     setInputGuess('');
+    setWrongGuesses(0);
+    setWrongGuessMessage('');
     if (inputRef.current) {
       inputRef.current.focus();
     }
@@ -125,6 +148,8 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
     setIsGameActive(false);
     setInputGuess('');
     setTimeLeft(defaultSeconds);
+    setWrongGuesses(0);
+    setWrongGuessMessage('');
   };
 
   const handleRevealAll = () => {
@@ -171,6 +196,8 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
                     setSelectedContinent(cont);
                     setFoundCountries(new Set());
                     setIsRevealed(false);
+                    setWrongGuesses(0);
+                    setWrongGuessMessage('');
                   }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                     isSelected
@@ -196,10 +223,14 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
                 type="text"
                 value={inputGuess}
                 onChange={handleInputChange}
+                onKeyDown={handleInputKeyDown}
                 disabled={isRevealed}
                 placeholder="Type any country name (e.g. France, Japan, Brazil, Germany)..."
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-slate-950/90 border border-indigo-500/40 text-white placeholder-slate-500 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 shadow-inner"
               />
+              <p className="mt-2 text-xs text-slate-400" aria-live="polite">
+                {guessesRemaining} wrong guesses left{wrongGuessMessage ? ` · ${wrongGuessMessage}` : ''}
+              </p>
             </div>
             {lastGuessedCountry && (
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30 animate-bounce">

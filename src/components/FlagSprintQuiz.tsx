@@ -21,6 +21,7 @@ import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
 import { FlagImage } from './FlagImage';
 import { selectCountryQuizPool } from '../utils/countryQuizPool';
+import { getWrongGuessLimit } from '../utils/guessAttempts';
 
 interface FlagSprintQuizProps {
   onEarnXP: (amount: number) => void;
@@ -39,11 +40,13 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
   const [streak, setStreak] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [wrongGuesses, setWrongGuesses] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Time limit based on difficulty: Easy (30s), Medium (15s), Hard (6s blitz)
   const timeLimitForFlag = isLearningMode ? 9999 : difficulty === 'easy' ? 30 : difficulty === 'medium' ? 15 : 6;
+  const guessLimit = getWrongGuessLimit(difficulty);
   const [timeLeft, setTimeLeft] = useState(timeLimitForFlag);
 
   // Filter pool by continent
@@ -67,6 +70,7 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
     setIsAnswered(false);
     setIsCorrect(false);
     setShowHint(false);
+    setWrongGuesses(0);
     setScore(0);
     setStreak(0);
     setIsGameOver(false);
@@ -180,9 +184,14 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
     if (checkAnswerCorrectness(typedGuess)) {
       triggerSuccess();
     } else {
-      setIsAnswered(true);
-      setIsCorrect(false);
-      setStreak(0);
+      const nextWrongGuesses = wrongGuesses + 1;
+      setWrongGuesses(nextWrongGuesses);
+      setTypedGuess('');
+      if (nextWrongGuesses >= guessLimit) {
+        setIsAnswered(true);
+        setIsCorrect(false);
+        setStreak(0);
+      }
     }
   };
 
@@ -230,6 +239,7 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
       setIsAnswered(false);
       setIsCorrect(false);
       setShowHint(false);
+      setWrongGuesses(0);
       setTimeout(() => inputRef.current?.focus(), 80);
     } else {
       setIsGameOver(true);
@@ -444,6 +454,11 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}
+              <p className="text-xs text-slate-400" aria-live="polite">
+                {Math.max(0, guessLimit - wrongGuesses)} wrong guesses left
+                {wrongGuesses > 0 && wrongGuesses < guessLimit && ' — wrong answer, try again'}
+                {isAnswered && !isCorrect && quizInputType === 'type' && ' — answer revealed'}
+              </p>
             </form>
           ) : (
             /* MODE 2: MULTIPLE CHOICE BUTTONS */
