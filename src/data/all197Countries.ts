@@ -1192,21 +1192,7 @@ export const ALL_197_COUNTRIES: CountryFullItem[] = [
     funFact: 'Produces over 50% of the entire world’s hand-stitched footballs (soccer balls) in Sialkot.',
     nickname: 'Land of the Pure'
   },
-  {
-    name: 'Palestine',
-    code: 'PS',
-    flag: '🇵🇸',
-    continent: 'Asia',
-    capital: 'Jerusalem (proclaimed) / Ramallah',
-    currency: 'Israeli Shekel (ILS) & Jordanian Dinar',
-    currencyCode: 'ILS',
-    language: 'Arabic',
-    religion: 'Islam (93%) & Christianity (6%)',
-    population: '5.4M',
-    areaKm2: 6020,
-    aliases: ['palestine', 'state of palestine'],
-    funFact: 'Jericho in the West Bank is considered one of the oldest continuously inhabited cities on Earth.'
-  },
+
   {
     name: 'Philippines',
     code: 'PH',
