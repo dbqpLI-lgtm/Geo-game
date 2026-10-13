@@ -2,24 +2,28 @@ import React, { useState } from 'react';
 import { Mic, Briefcase, Skull, Flower2, Search, Copy, Check, Sparkles } from 'lucide-react';
 import { SummaryPersonaKey } from '../types';
 
+const defaultPersonas: Record<SummaryPersonaKey, string> = {
+  podcaster: 'No recap is available yet. Generate your day summary to unlock the narrative.',
+  executive: 'No executive summary is available yet. Generate your day summary to unlock the analysis.',
+  roast: 'No roast is available yet. Generate your day summary to unlock the comedy.',
+  zen: 'No reflection is available yet. Generate your day summary to unlock the calm recap.',
+  detective: 'No detective summary is available yet. Generate your day summary to unlock the clues.',
+};
+
 interface PersonaSelectorProps {
-  personas: {
-    podcaster: string;
-    executive: string;
-    roast: string;
-    zen: string;
-    detective: string;
-  };
+  personas?: Partial<Record<SummaryPersonaKey, string>>;
   activePersona: SummaryPersonaKey;
   onSelectPersona: (key: SummaryPersonaKey) => void;
 }
 
 export const PersonaSelector: React.FC<PersonaSelectorProps> = ({
-  personas,
+  personas = defaultPersonas,
   activePersona,
   onSelectPersona,
 }) => {
   const [copied, setCopied] = useState(false);
+
+  const resolvedPersonas = { ...defaultPersonas, ...personas };
 
   const personaConfig: Record<
     SummaryPersonaKey,
@@ -62,13 +66,23 @@ export const PersonaSelector: React.FC<PersonaSelectorProps> = ({
     },
   };
 
-  const currentSummary = personas[activePersona] || personas.podcaster;
-  const currentMeta = personaConfig[activePersona];
+  const currentSummary = resolvedPersonas[activePersona] || resolvedPersonas.podcaster || '';
+  const currentMeta = personaConfig[activePersona] || personaConfig.podcaster;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(currentSummary);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    if (!currentSummary) return;
+
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(currentSummary);
+      }
+      setCopied(true);
+    } catch {
+      setCopied(false);
+      return;
+    }
+
+    window.setTimeout(() => setCopied(false), 2000);
   };
 
   return (
