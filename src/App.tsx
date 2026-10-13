@@ -232,9 +232,7 @@ function AppContent() {
         currentMode={currentMode}
         onSelectMode={(mode) => {
           setCurrentMode(mode);
-          if (mode === 'learning') {
-            setIsLearningMode(true);
-          }
+          setIsLearningMode(mode === 'learning');
         }}
         xpPoints={xpPoints}
         streak={streak}
@@ -278,9 +276,7 @@ function AppContent() {
                 key={item.id}
                 onClick={() => {
                   setCurrentMode(item.id);
-                  if (item.id === 'learning') {
-                    setIsLearningMode(true);
-                  }
+                  setIsLearningMode(item.id === 'learning');
                 }}
                 className={`p-2.5 rounded-2xl border text-left transition-all backdrop-blur-md shadow-sm ${
                   isActive
@@ -304,8 +300,13 @@ function AppContent() {
         </div>
 
         {/* Dynamic Quiz & Learning Views */}
-        {(currentMode === 'learning' || isLearningMode) ? (
-          <LearningModeView onStartQuiz={() => setCurrentMode('countries')} />
+        {currentMode === 'learning' ? (
+          <LearningModeView
+            onStartQuiz={() => {
+              setCurrentMode('countries');
+              setIsLearningMode(false);
+            }}
+          />
         ) : (
           <>
             {currentMode === 'daily' && <DailyChallenge onEarnXP={handleEarnXP} />}
@@ -348,6 +349,7 @@ function AppContent() {
               </span>
             )}
             <span>Powered by Gemini 3.8 Flash & Firebase</span>
+            <span>Coded by Jeremiah Judy "Jj"</span>
           </div>
         </div>
       </footer>
