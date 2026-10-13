@@ -19,7 +19,7 @@ import {
   Star,
   Award,
 } from 'lucide-react';
-import { ALL_196_COUNTRIES, CountryFullItem } from '../data/all196Countries';
+import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 
 interface LearningModeViewProps {
   onStartQuiz: () => void;
@@ -47,7 +47,7 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
 
   // Filtered Country List
   const filteredCountries = useMemo(() => {
-    return ALL_196_COUNTRIES.filter((c) => {
+    return ALL_197_COUNTRIES.filter((c) => {
       const matchesContinent =
         selectedContinent === 'All' ||
         (selectedContinent === 'Americas'

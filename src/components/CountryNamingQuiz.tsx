@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Globe2, Search, Trophy, CheckCircle2, HelpCircle, Sparkles, Filter, Clock, RotateCcw, Info, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { ALL_196_COUNTRIES, CountryFullItem } from '../data/all196Countries';
+import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
 
 interface CountryNamingQuizProps {
@@ -24,7 +24,7 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Filter countries by continent
-  const availableCountries = ALL_196_COUNTRIES.filter((c) => {
+  const availableCountries = ALL_197_COUNTRIES.filter((c) => {
     if (selectedContinent === 'All') return true;
     if (selectedContinent === 'Americas') return c.continent === 'North America' || c.continent === 'South America';
     return c.continent === selectedContinent;
@@ -134,7 +134,7 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
             </div>
             <h2 className="text-2xl font-black text-white">Name Every Country Challenge</h2>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Type names of sovereign nations as fast as you can. No need to press enter—our cartographic engine recognizes countries in real time!
+              Type the country names in this roster as fast as you can. No need to press enter—our cartographic engine recognizes them in real time!
             </p>
           </div>
 

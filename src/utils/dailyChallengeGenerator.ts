@@ -1,4 +1,4 @@
-import { ALL_196_COUNTRIES, CountryFullItem } from '../data/all196Countries';
+import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { PHYSICAL_GEOGRAPHY_ITEMS } from '../data/geographyData';
 import { COUNTRY_NICKNAMES_LIST } from '../data/outlinesAndGeoData';
 
@@ -43,7 +43,7 @@ export function generateDailyChallenge(dateStr: string): DailyQuestion[] {
     seed = (seed * 31 + dateStr.charCodeAt(i)) % 1000000;
   }
 
-  const countries = ALL_196_COUNTRIES;
+  const countries = ALL_197_COUNTRIES;
 
   // 1. Capital question
   const c1Index = Math.floor(pseudoRandom(seed + 1) * countries.length);

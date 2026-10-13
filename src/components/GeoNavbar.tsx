@@ -38,6 +38,7 @@ export type GameMode =
   | 'states'
   | 'flag-sprint'
   | 'physical-geo'
+  | 'government-leaders'
   | 'ai-custom';
 
 interface GeoNavbarProps {
@@ -69,7 +70,7 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
   const modes: Array<{ id: GameMode; label: string; icon: React.ReactNode; badge?: string }> = [
     { id: 'daily', label: 'Daily Challenge', icon: <Calendar className="w-4 h-4 text-amber-400" />, badge: '+250 XP' },
     { id: 'learning', label: 'Atlas & Learn', icon: <BookOpen className="w-4 h-4 text-purple-400" />, badge: 'Study' },
-    { id: 'countries', label: '196 Countries', icon: <Globe2 className="w-4 h-4 text-indigo-400" />, badge: 'All' },
+    { id: 'countries', label: '197 Countries', icon: <Globe2 className="w-4 h-4 text-indigo-400" />, badge: 'All' },
     { id: 'capitals', label: 'Capitals', icon: <Building2 className="w-4 h-4 text-blue-400" /> },
     { id: 'leaders', label: 'Country Leaders', icon: <Crown className="w-4 h-4 text-amber-400" />, badge: 'New' },
     { id: 'culture', label: 'Money & Faith', icon: <Coins className="w-4 h-4 text-amber-400" />, badge: 'Triad' },
@@ -80,6 +81,7 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
     { id: 'states', label: 'States', icon: <MapPin className="w-4 h-4 text-amber-400" />, badge: '50 States' },
     { id: 'flag-sprint', label: 'Name the Flag', icon: <Zap className="w-4 h-4 text-rose-400" />, badge: 'Guess' },
     { id: 'physical-geo', label: 'Physical Wonders', icon: <Mountain className="w-4 h-4 text-cyan-400" /> },
+    { id: 'government-leaders', label: 'Leaders', icon: <Crown className="w-4 h-4 text-violet-400" />, badge: 'Prime Ministers' },
     { id: 'ai-custom', label: 'AI Custom Quiz', icon: <Sparkles className="w-4 h-4 text-purple-400" />, badge: 'Gemini' },
   ];
 

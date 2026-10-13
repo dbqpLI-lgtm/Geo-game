@@ -13,7 +13,7 @@ import {
   Volume2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { ALL_196_COUNTRIES, CountryFullItem } from '../data/all196Countries';
+import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
 
 interface WorldCapitalsQuizProps {
@@ -40,7 +40,7 @@ export const WorldCapitalsQuiz: React.FC<WorldCapitalsQuizProps> = ({ onEarnXP }
 
   // Filter countries that have capitals defined
   const availableCountries = useMemo(() => {
-    return ALL_196_COUNTRIES.filter((c) => {
+    return ALL_197_COUNTRIES.filter((c) => {
       if (selectedContinent === 'All') return true;
       if (selectedContinent === 'Americas') return c.continent === 'North America' || c.continent === 'South America';
       return c.continent === selectedContinent;

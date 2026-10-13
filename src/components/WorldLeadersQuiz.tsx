@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { COUNTRIES_WITH_LEADERS, CountryLeadersData, LeaderItem } from '../data/worldLeadersData';
-import { ALL_196_COUNTRIES } from '../data/all196Countries';
+import { ALL_197_COUNTRIES } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
 
 interface WorldLeadersQuizProps {
@@ -164,7 +164,7 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
     }
 
     // Otherwise, check if we need to fetch via API for any of the 196 countries
-    const targetCountry = ALL_196_COUNTRIES.find((c) => c.code === countryCode || c.name === countryName);
+    const targetCountry = ALL_197_COUNTRIES.find((c) => c.code === countryCode || c.name === countryName);
     const targetName = targetCountry ? targetCountry.name : countryName || 'Selected Country';
 
     try {
@@ -406,9 +406,9 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
 
   // Filtered countries for the Search Country Modal
   const filteredCountries = useMemo(() => {
-    if (!countrySearchQuery.trim()) return ALL_196_COUNTRIES;
+    if (!countrySearchQuery.trim()) return ALL_197_COUNTRIES;
     const q = countrySearchQuery.toLowerCase();
-    return ALL_196_COUNTRIES.filter(
+    return ALL_197_COUNTRIES.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.code.toLowerCase().includes(q) ||

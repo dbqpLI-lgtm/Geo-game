@@ -15,9 +15,10 @@ export interface CountryFullItem {
   nickname?: string;
 }
 
-export const ALL_196_COUNTRIES: CountryFullItem[] = [
+// Includes the 193 UN member states plus Vatican City, Palestine, Taiwan, and Kosovo.
+export const ALL_197_COUNTRIES: CountryFullItem[] = [
   // ==========================================
-  // EUROPE (45 countries)
+  // EUROPE (46 countries)
   // ==========================================
   {
     name: 'Albania',
@@ -118,8 +119,8 @@ export const ALL_196_COUNTRIES: CountryFullItem[] = [
     flag: '🇧🇬',
     continent: 'Europe',
     capital: 'Sofia',
-    currency: 'Bulgarian Lev (BGN)',
-    currencyCode: 'BGN',
+    currency: 'Euro (€)',
+    currencyCode: 'EUR',
     language: 'Bulgarian',
     religion: 'Eastern Orthodoxy (60%)',
     population: '6.4M',
@@ -2287,8 +2288,8 @@ export const ALL_196_COUNTRIES: CountryFullItem[] = [
     flag: '🇿🇼',
     continent: 'Africa',
     capital: 'Harare',
-    currency: 'Zimbabwe Gold (ZiG) & US Dollar',
-    currencyCode: 'ZIG',
+    currency: 'Zimbabwe Gold (ZiG / ZWG) & US Dollar',
+    currencyCode: 'ZWG',
     language: '16 Official (Shona, Ndebele, English...)',
     religion: 'Christianity (Apostolic 33%, Pentecostal 20%, Catholic 17%)',
     population: '16M',
@@ -2374,7 +2375,7 @@ export const ALL_196_COUNTRIES: CountryFullItem[] = [
     population: '40M',
     areaKm2: 9984670,
     aliases: ['canada'],
-    funFact: 'Canada has the longest coastline in the world (202,080 km) and more lakes than all other countries combined.',
+    funFact: 'Canada has the world’s longest coastline, and Great Bear Lake is the largest lake located entirely within the country.',
     nickname: 'The Great White North'
   },
   {

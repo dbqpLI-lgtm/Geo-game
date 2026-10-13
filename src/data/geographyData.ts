@@ -410,7 +410,7 @@ export const WORLD_COUNTRIES: CountryItem[] = [
     neighbors: ['United States'],
     flagColors: ['#FF0000', '#FFFFFF'],
     flagLayoutDesc: 'Red-white-red vertical triband with iconic 11-pointed red maple leaf in center',
-    funFact: 'Canada has the longest coastline in the world (202,080 km) and more lakes than all other countries combined.'
+    funFact: 'Canada has the world’s longest coastline, and Great Bear Lake is the largest lake located entirely within the country.'
   },
   {
     name: 'Mexico',

@@ -21,6 +21,7 @@ import { CountryNicknamesQuiz } from './components/CountryNicknamesQuiz';
 import { StateNamingQuiz } from './components/StateNamingQuiz';
 import { FlagSprintQuiz } from './components/FlagSprintQuiz';
 import { PhysicalGeoQuiz } from './components/PhysicalGeoQuiz';
+import { GovernmentLeadersQuiz } from './components/GovernmentLeadersQuiz';
 import { AICustomQuiz } from './components/AICustomQuiz';
 import { WorldLeadersQuiz } from './components/WorldLeadersQuiz';
 import {
@@ -78,7 +79,6 @@ function AppContent() {
   }, [userProfile]);
 
   const handleEarnXP = (baseAmount: number) => {
-    // Difficulty XP Multiplier: Easy (1x), Medium (1.25x), Hard (1.75x)
     const multipliedAmount = Math.round(baseAmount * xpMultiplier);
 
     setXpPoints((prev) => {
@@ -208,6 +208,14 @@ function AppContent() {
       activeBorder: 'border-cyan-500 bg-cyan-950/30',
     },
     {
+      id: 'government-leaders',
+      label: 'Name the Leaders',
+      desc: 'Prime Ministers Through History',
+      icon: <Crown className="w-5 h-5 text-violet-400" />,
+      color: 'hover:border-violet-500/50',
+      activeBorder: 'border-violet-500 bg-violet-950/30',
+    },
+    {
       id: 'ai-custom',
       label: 'AI Custom Quiz',
       desc: 'Quiz Anything with Gemini',
@@ -259,7 +267,6 @@ function AppContent() {
           </div>
         )}
 
-        {/* Global Difficulty Level & Learning Mode Bar */}
         <DifficultySelector />
 
         {/* Quick Mode Jump Bar */}
@@ -305,6 +312,7 @@ function AppContent() {
             {currentMode === 'countries' && <CountryNamingQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'capitals' && <WorldCapitalsQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'leaders' && <WorldLeadersQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'government-leaders' && <GovernmentLeadersQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'culture' && <CultureCurrencyReligionQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'outlines' && <CountryOutlineQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'geoguessr' && <GeoGuessrGame onEarnXP={handleEarnXP} />}
@@ -328,7 +336,7 @@ function AppContent() {
             <Compass className="w-4 h-4 text-indigo-400" />
             <span className="font-semibold text-slate-300">GeoMaster Complete Atlas & Quiz Arena</span>
             <span>•</span>
-            <span>196 Sovereign Nations, Learning Desk & Adaptive Difficulty</span>
+            <span>197 Countries, Learning Desk & Adaptive Difficulty</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400">
             <span className="flex items-center gap-1 font-mono">

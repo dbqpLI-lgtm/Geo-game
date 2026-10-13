@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Coins, Languages, Church, CheckCircle2, XCircle, ArrowRight, Trophy, Sparkles, RotateCcw, Filter, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { ALL_196_COUNTRIES, CountryFullItem } from '../data/all196Countries';
+import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 
 interface CultureQuizProps {
   onEarnXP: (amount: number) => void;
@@ -25,7 +25,7 @@ export const CultureCurrencyReligionQuiz: React.FC<CultureQuizProps> = ({ onEarn
 
   // Filter pool
   const filteredCountries = useMemo(() => {
-    return ALL_196_COUNTRIES.filter(
+    return ALL_197_COUNTRIES.filter(
       (c) => selectedContinent === 'All' || c.continent === selectedContinent
     );
   }, [selectedContinent]);
