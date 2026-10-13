@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Globe2, Search, Trophy, CheckCircle2, HelpCircle, Sparkles, Filter, Clock, RotateCcw, Info, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ALL_196_COUNTRIES, CountryFullItem } from '../data/all196Countries';
+import { useGameSettings } from '../context/GameSettingsContext';
 
 interface CountryNamingQuizProps {
   onEarnXP: (amount: number) => void;
 }
 
 export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }) => {
+  const { difficulty, hintsAllowed, isLearningMode } = useGameSettings();
+  const defaultSeconds = isLearningMode ? 9999 : difficulty === 'easy' ? 600 : difficulty === 'hard' ? 120 : 300;
   const [selectedContinent, setSelectedContinent] = useState<string>('All');
   const [inputGuess, setInputGuess] = useState('');
   const [foundCountries, setFoundCountries] = useState<Set<string>>(new Set());
@@ -86,7 +89,7 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
 
   const handleStartGame = (timed: boolean) => {
     setIsTimedMode(timed);
-    setTimeLeft(300);
+    setTimeLeft(defaultSeconds);
     setFoundCountries(new Set());
     setIsRevealed(false);
     setIsGameActive(true);
@@ -101,7 +104,7 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
     setIsRevealed(false);
     setIsGameActive(false);
     setInputGuess('');
-    setTimeLeft(300);
+    setTimeLeft(defaultSeconds);
   };
 
   const handleRevealAll = () => {
@@ -199,7 +202,7 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
               onClick={() => handleStartGame(true)}
               className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-sm"
             >
-              5m Blitz
+              {difficulty === 'easy' ? '10m Relaxed' : difficulty === 'hard' ? '2m Hard Blitz' : '5m Blitz'}
             </button>
 
             <button

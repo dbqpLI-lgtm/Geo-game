@@ -13,15 +13,19 @@ import {
   HelpCircle,
   Keyboard,
   ListFilter,
+  Clock,
+  Lightbulb,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ALL_196_COUNTRIES, CountryFullItem } from '../data/all196Countries';
+import { useGameSettings } from '../context/GameSettingsContext';
 
 interface FlagSprintQuizProps {
   onEarnXP: (amount: number) => void;
 }
 
 export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
+  const { difficulty, hintsAllowed, isLearningMode, getTimeLimit } = useGameSettings();
   const [selectedContinent, setSelectedContinent] = useState<string>('All');
   const [quizInputType, setQuizInputType] = useState<'type' | 'choice'>('type');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -32,9 +36,13 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
-  const [showGiveUpReveal, setShowGiveUpReveal] = useState(false);
+  const [showHint, setShowHint] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Time limit based on difficulty: Easy (30s), Medium (15s), Hard (6s blitz)
+  const timeLimitForFlag = isLearningMode ? 9999 : difficulty === 'easy' ? 30 : difficulty === 'medium' ? 15 : 6;
+  const [timeLeft, setTimeLeft] = useState(timeLimitForFlag);
 
   // Filter pool by continent
   const continentPool = useMemo(() => {
@@ -56,16 +64,43 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
     setSelectedChoice(null);
     setIsAnswered(false);
     setIsCorrect(false);
+    setShowHint(false);
     setScore(0);
     setStreak(0);
     setIsGameOver(false);
-    setShowGiveUpReveal(false);
+    setTimeLeft(timeLimitForFlag);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   useEffect(() => {
     startNewRound();
-  }, [continentPool, quizInputType]);
+  }, [continentPool, quizInputType, difficulty, isLearningMode]);
+
+  // Reset timer on question change
+  useEffect(() => {
+    setTimeLeft(timeLimitForFlag);
+    setShowHint(false);
+  }, [currentIndex, difficulty, isLearningMode]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (isLearningMode || isAnswered || isGameOver) return;
+
+    if (timeLeft <= 0) {
+      // Time up!
+      setIsAnswered(true);
+      setIsCorrect(false);
+      setSelectedChoice('__TIME_UP__');
+      setStreak(0);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, isAnswered, isGameOver, isLearningMode]);
 
   const currentCountry: CountryFullItem | undefined = roundList[currentIndex];
 
@@ -143,14 +178,12 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
     if (checkAnswerCorrectness(typedGuess)) {
       triggerSuccess();
     } else {
-      // Wrong guess on manual enter submit
       setIsAnswered(true);
       setIsCorrect(false);
       setStreak(0);
     }
   };
 
-  // Handle Multiple Choice click
   const handleChoiceSelect = (choice: string) => {
     if (isAnswered || !currentCountry) return;
     setSelectedChoice(choice);
@@ -184,7 +217,6 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
   const handleGiveUp = () => {
     setIsAnswered(true);
     setIsCorrect(false);
-    setShowGiveUpReveal(true);
     setStreak(0);
   };
 
@@ -195,7 +227,7 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
       setSelectedChoice(null);
       setIsAnswered(false);
       setIsCorrect(false);
-      setShowGiveUpReveal(false);
+      setShowHint(false);
       setTimeout(() => inputRef.current?.focus(), 80);
     } else {
       setIsGameOver(true);
@@ -221,6 +253,9 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-bold">
               {currentIndex + 1} / {roundList.length}
             </span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-rose-300 font-semibold uppercase">
+              {difficulty.toUpperCase()}
+            </span>
           </div>
           <h2 className="text-2xl font-black text-white">Identify the Nation by Banner</h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -230,6 +265,22 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
 
         {/* Score & Streak */}
         <div className="flex items-center gap-3">
+          {/* Question Countdown Timer */}
+          {!isLearningMode && (
+            <div
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl font-mono font-bold text-xs ${
+                timeLeft <= 2
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                  : timeLeft <= 5
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  : 'bg-slate-950/80 border border-slate-800 text-slate-300'
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              <span>{timeLeft}s</span>
+            </div>
+          )}
+
           <div className="px-3.5 py-2 rounded-2xl bg-slate-950/80 border border-slate-800 text-right">
             <div className="text-base font-black text-rose-400">
               {score} / {roundList.length}
@@ -297,13 +348,46 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
       {!isGameOver && currentCountry ? (
         <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-8 backdrop-blur-xl shadow-2xl text-center space-y-6">
           {/* Large Flag Presentation */}
-          <div className="py-4">
+          <div className="py-2">
             <div className="text-8xl sm:text-9xl filter drop-shadow-2xl select-none animate-in zoom-in-95 duration-200">
               {currentCountry.flag}
             </div>
             <div className="mt-3 text-xs text-slate-400">
               Continent: <strong className="text-slate-200">{currentCountry.continent}</strong>
             </div>
+          </div>
+
+          {/* Hint Section (Adjusted by Difficulty) */}
+          <div className="flex flex-col items-center gap-2">
+            {hintsAllowed ? (
+              <button
+                type="button"
+                onClick={() => setShowHint(!showHint)}
+                disabled={isAnswered}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700"
+              >
+                <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+                <span>{showHint ? 'Hide Hint' : 'Need a Clue?'}</span>
+              </button>
+            ) : (
+              <span className="text-[11px] text-rose-400/80 font-medium italic">
+                🔒 Hints disabled in Hard Mode
+              </span>
+            )}
+
+            {showHint && currentCountry && (
+              <div className="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/30 text-amber-200 text-xs max-w-md animate-in fade-in space-y-1">
+                <div>
+                  Capital is <strong>{currentCountry.capital}</strong>.
+                </div>
+                {difficulty === 'easy' && (
+                  <div className="text-[11px] text-amber-300/80">
+                    Country name starts with letter:{' '}
+                    <strong className="text-white text-sm font-mono">{currentCountry.name.charAt(0)}</strong>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* MODE 1: TYPE THE COUNTRY NAME */}
@@ -423,7 +507,11 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
                   </span>
                 </span>
                 <span className="font-bold">
-                  {isCorrect ? '✅ Correct (+35 XP)' : '❌ Answer Revealed'}
+                  {isCorrect
+                    ? '✅ Correct (+35 XP)'
+                    : selectedChoice === '__TIME_UP__'
+                    ? '⏰ Time Ran Out!'
+                    : '❌ Answer Revealed'}
                 </span>
               </div>
               <div className="text-slate-300 grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 border-t border-white/10 text-[11px]">
@@ -454,7 +542,7 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
           <h3 className="text-2xl font-black text-white">Flag Round Finished!</h3>
           <p className="text-sm text-slate-300">
             You identified <strong className="text-amber-400 font-mono text-lg">{score}</strong> out of{' '}
-            {roundList.length} sovereign flags correctly!
+            {roundList.length} sovereign flags correctly on {difficulty.toUpperCase()} mode!
           </p>
 
           <button

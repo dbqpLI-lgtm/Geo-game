@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { FLAG_CHALLENGES, COLOR_SWATCHES, FlagChallenge } from '../data/geographyData';
+import { useGameSettings } from '../context/GameSettingsContext';
 
 interface FlagMakerStudioProps {
   onEarnXP: (amount: number) => void;
 }
 
 export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) => {
+  const { difficulty, hintsAllowed, isLearningMode } = useGameSettings();
   // Random country challenge selection (no manual country picking list with spoiled flag emojis)
   const [currentChallenge, setCurrentChallenge] = useState<FlagChallenge>(() => {
     const randomIndex = Math.floor(Math.random() * FLAG_CHALLENGES.length);
@@ -479,13 +481,19 @@ export const FlagMakerStudio: React.FC<FlagMakerStudioProps> = ({ onEarnXP }) =>
 
         {/* Peek Solution & Need a Hint buttons */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowHint(!showHint)}
-            className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition"
-          >
-            <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-            <span>{showHint ? 'Hide Hint' : 'Need a Hint?'}</span>
-          </button>
+          {hintsAllowed ? (
+            <button
+              onClick={() => setShowHint(!showHint)}
+              className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition"
+            >
+              <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+              <span>{showHint ? 'Hide Hint' : 'Need a Hint?'}</span>
+            </button>
+          ) : (
+            <span className="text-[11px] text-rose-400 font-medium italic px-2">
+              🔒 Hints locked in Hard Mode
+            </span>
+          )}
 
           <button
             onClick={() => setShowSolutionPeek(!showSolutionPeek)}

@@ -5,7 +5,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { GameSettingsProvider, useGameSettings } from './context/GameSettingsContext';
 import { GeoNavbar, GameMode } from './components/GeoNavbar';
+import { DifficultySelector } from './components/DifficultySelector';
+import { LearningModeView } from './components/LearningModeView';
 import { AuthModal } from './components/AuthModal';
 import { DailyChallenge } from './components/DailyChallenge';
 import { CountryNamingQuiz } from './components/CountryNamingQuiz';
@@ -19,6 +22,7 @@ import { StateNamingQuiz } from './components/StateNamingQuiz';
 import { FlagSprintQuiz } from './components/FlagSprintQuiz';
 import { PhysicalGeoQuiz } from './components/PhysicalGeoQuiz';
 import { AICustomQuiz } from './components/AICustomQuiz';
+import { WorldLeadersQuiz } from './components/WorldLeadersQuiz';
 import {
   Globe2,
   Flag,
@@ -35,11 +39,13 @@ import {
   Coins,
   Calendar,
   LogIn,
-  CloudCheck,
+  BookOpen,
+  Crown,
 } from 'lucide-react';
 
 function AppContent() {
   const { currentUser, userProfile, syncXPAndStreak } = useAuth();
+  const { xpMultiplier, isLearningMode, setIsLearningMode } = useGameSettings();
   const [currentMode, setCurrentMode] = useState<GameMode>('countries');
   const [xpPoints, setXpPoints] = useState<number>(0);
   const [streak, setStreak] = useState<number>(1);
@@ -71,9 +77,12 @@ function AppContent() {
     }
   }, [userProfile]);
 
-  const handleEarnXP = (amount: number) => {
+  const handleEarnXP = (baseAmount: number) => {
+    // Difficulty XP Multiplier: Easy (1x), Medium (1.25x), Hard (1.75x)
+    const multipliedAmount = Math.round(baseAmount * xpMultiplier);
+
     setXpPoints((prev) => {
-      const updated = prev + amount;
+      const updated = prev + multipliedAmount;
       const nextStreak = streak + 1;
       setStreak(nextStreak);
       try {
@@ -103,6 +112,14 @@ function AppContent() {
       activeBorder: 'border-amber-500 bg-amber-950/40 ring-1 ring-amber-400/40',
     },
     {
+      id: 'learning',
+      label: 'Atlas & Learn',
+      desc: 'Flashcards & 0 Stress Study',
+      icon: <BookOpen className="w-5 h-5 text-purple-400" />,
+      color: 'hover:border-purple-500/50',
+      activeBorder: 'border-purple-500 bg-purple-950/40 ring-1 ring-purple-400/40',
+    },
+    {
       id: 'countries',
       label: 'Every Country',
       desc: 'Type & Name World Nations',
@@ -117,6 +134,14 @@ function AppContent() {
       icon: <Building2 className="w-5 h-5 text-blue-400" />,
       color: 'hover:border-blue-500/50',
       activeBorder: 'border-blue-500 bg-blue-950/30',
+    },
+    {
+      id: 'leaders',
+      label: 'Country Leaders',
+      desc: 'List All Leaders of Any Nation',
+      icon: <Crown className="w-5 h-5 text-amber-400" />,
+      color: 'hover:border-amber-500/50',
+      activeBorder: 'border-amber-500 bg-amber-950/30',
     },
     {
       id: 'culture',
@@ -197,7 +222,12 @@ function AppContent() {
       {/* Top Navbar */}
       <GeoNavbar
         currentMode={currentMode}
-        onSelectMode={(mode) => setCurrentMode(mode)}
+        onSelectMode={(mode) => {
+          setCurrentMode(mode);
+          if (mode === 'learning') {
+            setIsLearningMode(true);
+          }
+        }}
         xpPoints={xpPoints}
         streak={streak}
         onOpenAuth={() => setIsAuthModalOpen(true)}
@@ -229,22 +259,30 @@ function AppContent() {
           </div>
         )}
 
+        {/* Global Difficulty Level & Learning Mode Bar */}
+        <DifficultySelector />
+
         {/* Quick Mode Jump Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
           {modeCards.map((item) => {
             const isActive = currentMode === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => setCurrentMode(item.id)}
-                className={`p-3 rounded-2xl border text-left transition-all backdrop-blur-md shadow-sm ${
+                onClick={() => {
+                  setCurrentMode(item.id);
+                  if (item.id === 'learning') {
+                    setIsLearningMode(true);
+                  }
+                }}
+                className={`p-2.5 rounded-2xl border text-left transition-all backdrop-blur-md shadow-sm ${
                   isActive
                     ? `${item.activeBorder} shadow-lg ring-1 ring-white/10`
                     : `bg-slate-900/50 border-slate-800/80 ${item.color} text-slate-400 hover:text-white`
                 }`}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="p-1.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="p-1 rounded-xl bg-slate-950/80 border border-slate-800">
                     {item.icon}
                   </div>
                   {isActive && (
@@ -258,19 +296,26 @@ function AppContent() {
           })}
         </div>
 
-        {/* Dynamic Quiz Views */}
-        {currentMode === 'daily' && <DailyChallenge onEarnXP={handleEarnXP} />}
-        {currentMode === 'countries' && <CountryNamingQuiz onEarnXP={handleEarnXP} />}
-        {currentMode === 'capitals' && <WorldCapitalsQuiz onEarnXP={handleEarnXP} />}
-        {currentMode === 'culture' && <CultureCurrencyReligionQuiz onEarnXP={handleEarnXP} />}
-        {currentMode === 'outlines' && <CountryOutlineQuiz onEarnXP={handleEarnXP} />}
-        {currentMode === 'geoguessr' && <GeoGuessrGame onEarnXP={handleEarnXP} />}
-        {currentMode === 'flag-maker' && <FlagMakerStudio onEarnXP={handleEarnXP} />}
-        {currentMode === 'nicknames' && <CountryNicknamesQuiz onEarnXP={handleEarnXP} />}
-        {currentMode === 'states' && <StateNamingQuiz onEarnXP={handleEarnXP} />}
-        {currentMode === 'flag-sprint' && <FlagSprintQuiz onEarnXP={handleEarnXP} />}
-        {currentMode === 'physical-geo' && <PhysicalGeoQuiz onEarnXP={handleEarnXP} />}
-        {currentMode === 'ai-custom' && <AICustomQuiz onEarnXP={handleEarnXP} />}
+        {/* Dynamic Quiz & Learning Views */}
+        {(currentMode === 'learning' || isLearningMode) ? (
+          <LearningModeView onStartQuiz={() => setCurrentMode('countries')} />
+        ) : (
+          <>
+            {currentMode === 'daily' && <DailyChallenge onEarnXP={handleEarnXP} />}
+            {currentMode === 'countries' && <CountryNamingQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'capitals' && <WorldCapitalsQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'leaders' && <WorldLeadersQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'culture' && <CultureCurrencyReligionQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'outlines' && <CountryOutlineQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'geoguessr' && <GeoGuessrGame onEarnXP={handleEarnXP} />}
+            {currentMode === 'flag-maker' && <FlagMakerStudio onEarnXP={handleEarnXP} />}
+            {currentMode === 'nicknames' && <CountryNicknamesQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'states' && <StateNamingQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'flag-sprint' && <FlagSprintQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'physical-geo' && <PhysicalGeoQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'ai-custom' && <AICustomQuiz onEarnXP={handleEarnXP} />}
+          </>
+        )}
       </main>
 
       {/* Auth Modal */}
@@ -283,7 +328,7 @@ function AppContent() {
             <Compass className="w-4 h-4 text-indigo-400" />
             <span className="font-semibold text-slate-300">GeoMaster Complete Atlas & Quiz Arena</span>
             <span>•</span>
-            <span>196 Sovereign Nations, Capitals, Flags & Outlines</span>
+            <span>196 Sovereign Nations, Learning Desk & Adaptive Difficulty</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400">
             <span className="flex items-center gap-1 font-mono">
@@ -305,7 +350,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <GameSettingsProvider>
+        <AppContent />
+      </GameSettingsProvider>
     </AuthProvider>
   );
 }

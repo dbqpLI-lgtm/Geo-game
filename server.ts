@@ -177,6 +177,77 @@ Ensure output is ONLY valid JSON.`;
   });
 });
 
+// API: Generate Country Leaders List on-demand for any nation
+app.post('/api/country-leaders', async (req, res) => {
+  const { countryName } = req.body;
+  if (!countryName) {
+    return res.status(400).json({ error: 'Country name is required' });
+  }
+
+  if (ai) {
+    try {
+      const prompt = `You are a world-class historian. Generate the comprehensive chronological roster of the most notable or modern heads of state / heads of government (Presidents, Prime Ministers, Chancellors, Monarchs) for the country "${countryName}".
+Provide between 8 and 25 prominent historical and modern leaders in chronological order from earliest to present.
+
+Format strictly as JSON matching this schema:
+{
+  "countryName": "${countryName}",
+  "title": "Leaders / Prime Ministers / Presidents of ${countryName}",
+  "intro": "Can you name the key leaders who shaped ${countryName} through history?",
+  "leaders": [
+    {
+      "number": 1,
+      "name": "Full Name",
+      "term": "YYYY–YYYY",
+      "partyOrNote": "Political Party / Office Title",
+      "aliases": ["surname", "full name without accents"],
+      "bio": "1-sentence summary of major achievements or significance."
+    }
+  ]
+}
+
+Ensure the output is ONLY valid JSON with no markdown wrapping.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const text = response.text;
+      if (text) {
+        const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const data = JSON.parse(cleaned);
+        if (data && Array.isArray(data.leaders) && data.leaders.length > 0) {
+          data.totalCount = data.leaders.length;
+          return res.json(data);
+        }
+      }
+    } catch (err: any) {
+      console.warn('Gemini leader generation failed:', err?.message || err);
+    }
+  }
+
+  return res.json({
+    countryName: countryName,
+    title: `Key Leaders of ${countryName}`,
+    intro: `Test your knowledge of the notable leaders of ${countryName}.`,
+    totalCount: 5,
+    leaders: [
+      {
+        number: 1,
+        name: `Founding Leader of ${countryName}`,
+        term: 'Historic Era',
+        partyOrNote: 'Founding Statesperson',
+        aliases: ['founder', countryName.toLowerCase()],
+        bio: `Helped establish the modern sovereign institutions of ${countryName}.`
+      }
+    ]
+  });
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const { createServer } = await import('vite');

@@ -18,13 +18,18 @@ import {
   User,
   ShieldCheck,
   ChevronDown,
+  BookOpen,
+  Crown,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { DifficultySelector } from './DifficultySelector';
 
 export type GameMode =
   | 'daily'
+  | 'learning'
   | 'countries'
   | 'capitals'
+  | 'leaders'
   | 'culture'
   | 'outlines'
   | 'geoguessr'
@@ -63,8 +68,10 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
 
   const modes: Array<{ id: GameMode; label: string; icon: React.ReactNode; badge?: string }> = [
     { id: 'daily', label: 'Daily Challenge', icon: <Calendar className="w-4 h-4 text-amber-400" />, badge: '+250 XP' },
+    { id: 'learning', label: 'Atlas & Learn', icon: <BookOpen className="w-4 h-4 text-purple-400" />, badge: 'Study' },
     { id: 'countries', label: '196 Countries', icon: <Globe2 className="w-4 h-4 text-indigo-400" />, badge: 'All' },
     { id: 'capitals', label: 'Capitals', icon: <Building2 className="w-4 h-4 text-blue-400" /> },
+    { id: 'leaders', label: 'Country Leaders', icon: <Crown className="w-4 h-4 text-amber-400" />, badge: 'New' },
     { id: 'culture', label: 'Money & Faith', icon: <Coins className="w-4 h-4 text-amber-400" />, badge: 'Triad' },
     { id: 'outlines', label: 'Outlines', icon: <Eye className="w-4 h-4 text-teal-400" />, badge: 'Shapes' },
     { id: 'geoguessr', label: 'GeoGuessr', icon: <Navigation className="w-4 h-4 text-emerald-400" />, badge: 'Map' },
@@ -162,8 +169,10 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
           })}
         </div>
 
-        {/* Desktop XP & Profile / Sign-in */}
+        {/* Desktop Difficulty & XP & Profile */}
         <div className="hidden md:flex items-center gap-3">
+          <DifficultySelector compact={true} />
+
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold shadow-sm">
             <Award className="w-4 h-4 text-amber-400" />
             <span>{xpPoints} XP</span>
