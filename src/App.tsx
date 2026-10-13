@@ -23,6 +23,7 @@ import { PhysicalGeoQuiz } from './components/PhysicalGeoQuiz';
 import { GovernmentLeadersQuiz } from './components/GovernmentLeadersQuiz';
 import { AICustomQuiz } from './components/AICustomQuiz';
 import { WarHistoryQuiz } from './components/WarHistoryQuiz';
+import { SpaceExplorer } from './components/SpaceExplorer';
 
 const CityLocationQuiz = React.lazy(() =>
   import('./components/CityLocationQuiz').then((module) => ({ default: module.CityLocationQuiz }))
@@ -56,6 +57,7 @@ function AppContent() {
   const { currentUser, userProfile, syncXPAndStreak } = useAuth();
   const { xpMultiplier, isLearningMode, setIsLearningMode } = useGameSettings();
   const [currentMode, setCurrentMode] = useState<GameMode>('countries');
+  const [lastEarthMode, setLastEarthMode] = useState<GameMode>('countries');
   const [xpPoints, setXpPoints] = useState<number>(0);
   const [streak, setStreak] = useState<number>(1);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -103,6 +105,12 @@ function AppContent() {
     });
   };
 
+  const handleSelectMode = (mode: GameMode) => {
+    setCurrentMode(mode);
+    if (mode !== 'space') setLastEarthMode(mode);
+    setIsLearningMode(mode === 'learning');
+  };
+
   const modeCards: Array<{
     id: GameMode;
     label: string;
@@ -111,6 +119,14 @@ function AppContent() {
     color: string;
     activeBorder: string;
   }> = [
+    {
+      id: 'space',
+      label: 'Space Explorer',
+      desc: 'Explore the solar system & take a quiz',
+      icon: <Globe2 className="w-5 h-5 text-sky-300" />,
+      color: 'hover:border-sky-400/50',
+      activeBorder: 'border-sky-400 bg-sky-950/40 ring-1 ring-sky-300/40',
+    },
     {
       id: 'daily',
       label: 'Daily Quest',
@@ -254,10 +270,7 @@ function AppContent() {
       {/* Top Navbar */}
       <GeoNavbar
         currentMode={currentMode}
-        onSelectMode={(mode) => {
-          setCurrentMode(mode);
-          setIsLearningMode(mode === 'learning');
-        }}
+        onSelectMode={handleSelectMode}
         xpPoints={xpPoints}
         streak={streak}
         onOpenAuth={() => setIsAuthModalOpen(true)}
@@ -299,8 +312,7 @@ function AppContent() {
               <button
                 key={item.id}
                 onClick={() => {
-                  setCurrentMode(item.id);
-                  setIsLearningMode(item.id === 'learning');
+                  handleSelectMode(item.id);
                 }}
                 className={`p-2.5 rounded-2xl border text-left transition-all backdrop-blur-md shadow-sm ${
                   isActive
@@ -324,7 +336,9 @@ function AppContent() {
         </div>
 
         {/* Dynamic Quiz & Learning Views */}
-        {currentMode === 'learning' ? (
+        {currentMode === 'space' ? (
+          <SpaceExplorer onEarnXP={handleEarnXP} onSelectEarth={() => handleSelectMode(lastEarthMode)} />
+        ) : currentMode === 'learning' ? (
           <LearningModeView
             onStartQuiz={() => {
               setCurrentMode('countries');

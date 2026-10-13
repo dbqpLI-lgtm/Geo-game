@@ -21,6 +21,7 @@ import {
   Crown,
   Swords,
   Waves,
+  Orbit,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DifficultySelector } from './DifficultySelector';
@@ -42,7 +43,8 @@ export type GameMode =
   | 'war-history'
   | 'world-features'
   | 'government-leaders'
-  | 'ai-custom';
+  | 'ai-custom'
+  | 'space';
 
 interface GeoNavbarProps {
   currentMode: GameMode;
@@ -88,6 +90,7 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
     { id: 'world-features', label: 'Seas & Monuments', icon: <Waves className="w-4 h-4 text-cyan-400" />, badge: 'Map' },
     { id: 'government-leaders', label: 'Leaders', icon: <Crown className="w-4 h-4 text-violet-400" />, badge: 'Prime Ministers' },
     { id: 'ai-custom', label: 'AI Custom Quiz', icon: <Sparkles className="w-4 h-4 text-purple-400" />, badge: 'Gemini' },
+    { id: 'space', label: 'Space Explorer', icon: <Orbit className="w-4 h-4 text-sky-300" />, badge: 'New' },
   ];
 
   const displayName = userProfile?.displayName || currentUser?.displayName || (currentUser?.isAnonymous ? 'Guest Explorer' : 'Explorer');
