@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Feature, Geometry } from 'geojson';
-import { GeoJSON, MapContainer, TileLayer } from 'react-leaflet';
+import { GeoJSON, MapContainer } from 'react-leaflet';
 import { ALL_197_COUNTRIES } from '../data/all197Countries';
 import { countryBoundaries, getCountryBoundary } from '../data/worldCountryBoundaries';
 import 'leaflet/dist/leaflet.css';
@@ -37,7 +37,7 @@ export const CountryDiscoveryMap: React.FC<CountryDiscoveryMapProps> = ({
   };
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl sm:p-6">
+    <section className="relative z-0 isolate overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl sm:p-6">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h3 className="text-base font-bold text-white">World Discovery Map</h3>
@@ -50,21 +50,18 @@ export const CountryDiscoveryMap: React.FC<CountryDiscoveryMapProps> = ({
           <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-emerald-500" /> Found</span>
         </div>
       </div>
-      <div className="h-[320px] overflow-hidden rounded-2xl border border-slate-700 sm:h-[440px]">
+      <div className="relative z-0 isolate h-[320px] overflow-hidden rounded-2xl border border-slate-700 sm:h-[440px]">
         <MapContainer
           center={[20, 0]}
           zoom={2}
           minZoom={2}
           maxZoom={8}
+          attributionControl={false}
           maxBounds={[[-85.051129, -180], [85.051129, 180]]}
           maxBoundsViscosity={1}
-          className="h-full w-full bg-slate-200"
+          className="h-full w-full"
+          style={{ backgroundColor: '#a8d8e6' }}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            noWrap
-          />
           <GeoJSON
             data={countryBoundaries}
             style={styleCountry}
