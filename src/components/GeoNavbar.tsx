@@ -10,7 +10,6 @@ import {
   Building2,
   Eye,
   Tag,
-  Navigation,
   Coins,
   Calendar,
   LogIn,
@@ -32,7 +31,7 @@ export type GameMode =
   | 'leaders'
   | 'culture'
   | 'outlines'
-  | 'geoguessr'
+  | 'city-map'
   | 'flag-maker'
   | 'nicknames'
   | 'states'
@@ -75,7 +74,7 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
     { id: 'leaders', label: 'Country Leaders', icon: <Crown className="w-4 h-4 text-amber-400" />, badge: 'New' },
     { id: 'culture', label: 'Money & Faith', icon: <Coins className="w-4 h-4 text-amber-400" />, badge: 'Triad' },
     { id: 'outlines', label: 'Outlines', icon: <Eye className="w-4 h-4 text-teal-400" />, badge: 'Shapes' },
-    { id: 'geoguessr', label: 'GeoGuessr', icon: <Navigation className="w-4 h-4 text-emerald-400" />, badge: 'Map' },
+    { id: 'city-map', label: 'Find the City', icon: <MapPin className="w-4 h-4 text-emerald-400" />, badge: 'Map' },
     { id: 'flag-maker', label: 'Draw the Flag', icon: <Flag className="w-4 h-4 text-emerald-400" />, badge: 'Draw' },
     { id: 'nicknames', label: 'Nicknames', icon: <Tag className="w-4 h-4 text-orange-400" /> },
     { id: 'states', label: 'States', icon: <MapPin className="w-4 h-4 text-amber-400" />, badge: '50 States' },
@@ -107,7 +106,7 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
                   Atlas & Quiz
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">All Countries, Capitals, Outlines & GeoGuessr</p>
+              <p className="text-[11px] text-slate-400">All Countries, Capitals, and Outlines</p>
             </div>
           </div>
 

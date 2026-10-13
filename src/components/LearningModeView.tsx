@@ -20,6 +20,8 @@ import {
   Award,
 } from 'lucide-react';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
+import { FlagImage } from './FlagImage';
+import { getCurrencyDisplayName } from '../utils/currencyName';
 
 interface LearningModeViewProps {
   onStartQuiz: () => void;
@@ -256,9 +258,13 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
             {/* Front of Card: Flag & Country Name */}
             {!isFlipped ? (
               <div className="text-center my-auto space-y-3">
-                <span className="text-8xl sm:text-9xl filter drop-shadow-2xl inline-block">
-                  {currentFlashcard.flag}
-                </span>
+                <FlagImage
+                  key={currentFlashcard.code}
+                  countryCode={currentFlashcard.code}
+                  emoji={currentFlashcard.flag}
+                  alt={`${currentFlashcard.name} flag`}
+                  className="mx-auto h-32 w-48 rounded-lg object-contain drop-shadow-2xl"
+                />
                 <h3 className="text-3xl font-black text-white">{currentFlashcard.name}</h3>
                 {currentFlashcard.nickname && (
                   <p className="text-xs text-amber-300 font-medium italic">
@@ -275,7 +281,12 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
               /* Back of Card: Complete Geographic Dossier */
               <div className="my-auto space-y-4 animate-in fade-in">
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl">{currentFlashcard.flag}</span>
+                  <FlagImage
+                    countryCode={currentFlashcard.code}
+                    emoji={currentFlashcard.flag}
+                    alt={`${currentFlashcard.name} flag`}
+                    className="h-8 w-12 rounded object-contain"
+                  />
                   <div>
                     <h3 className="text-2xl font-black text-white">{currentFlashcard.name}</h3>
                     <span className="text-xs text-purple-300">{currentFlashcard.continent}</span>
@@ -294,7 +305,7 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
                     <span className="text-slate-400 flex items-center gap-1.5 mb-1">
                       <Coins className="w-3.5 h-3.5 text-amber-400" /> Currency
                     </span>
-                    <strong className="text-white text-sm">{currentFlashcard.currency}</strong>
+                    <strong className="text-white text-sm">{getCurrencyDisplayName(currentFlashcard.currency)}</strong>
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
@@ -377,9 +388,12 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
                 className="p-4 rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 hover:border-purple-500/50 transition-all cursor-pointer backdrop-blur-md group"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <span className="text-4xl filter drop-shadow group-hover:scale-110 transition-transform">
-                    {c.flag}
-                  </span>
+                  <FlagImage
+                    countryCode={c.code}
+                    emoji={c.flag}
+                    alt={`${c.name} flag`}
+                    className="h-10 w-14 rounded object-contain drop-shadow group-hover:scale-110 transition-transform"
+                  />
                   <button
                     type="button"
                     onClick={(e) => {
@@ -406,7 +420,7 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
                 </div>
                 <div className="text-[11px] text-slate-500 mt-2 flex items-center justify-between border-t border-slate-800/60 pt-2">
                   <span>{c.continent}</span>
-                  <span className="font-mono text-amber-400/80">{c.currency.split(' ')[0]}</span>
+                  <span className="font-mono text-amber-400/80">{getCurrencyDisplayName(c.currency)}</span>
                 </div>
               </div>
             );
@@ -439,10 +453,12 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
                       onClick={() => setSelectedCountry(c)}
                       className="hover:bg-slate-800/50 cursor-pointer transition-colors"
                     >
-                      <td className="py-2.5 px-4 text-xl">{c.flag}</td>
+                      <td className="py-2.5 px-4">
+                        <FlagImage countryCode={c.code} emoji={c.flag} alt={`${c.name} flag`} className="h-6 w-9 rounded object-contain" />
+                      </td>
                       <td className="py-2.5 px-4 font-bold text-white">{c.name}</td>
                       <td className="py-2.5 px-4 text-sky-300">{c.capital}</td>
-                      <td className="py-2.5 px-4 text-amber-300">{c.currency}</td>
+                      <td className="py-2.5 px-4 text-amber-300">{getCurrencyDisplayName(c.currency)}</td>
                       <td className="py-2.5 px-4 text-emerald-300">{c.language}</td>
                       <td className="py-2.5 px-4 text-purple-300">{c.religion}</td>
                       <td className="py-2.5 px-4">
@@ -482,7 +498,13 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
             </button>
 
             <div className="flex items-center gap-4">
-              <span className="text-6xl filter drop-shadow">{selectedCountry.flag}</span>
+              <FlagImage
+                key={selectedCountry.code}
+                countryCode={selectedCountry.code}
+                emoji={selectedCountry.flag}
+                alt={`${selectedCountry.name} flag`}
+                className="h-14 w-20 rounded object-contain drop-shadow"
+              />
               <div>
                 <h3 className="text-2xl font-black text-white">{selectedCountry.name}</h3>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-semibold">
@@ -498,7 +520,7 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
               </div>
               <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
                 <span className="text-slate-400 block mb-0.5 font-semibold">Official Currency</span>
-                <strong className="text-white text-sm">{selectedCountry.currency}</strong>
+                <strong className="text-white text-sm">{getCurrencyDisplayName(selectedCountry.currency)}</strong>
               </div>
               <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
                 <span className="text-slate-400 block mb-0.5 font-semibold">Language</span>

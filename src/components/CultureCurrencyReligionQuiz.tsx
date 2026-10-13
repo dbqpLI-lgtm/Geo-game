@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { Coins, Languages, Church, CheckCircle2, XCircle, ArrowRight, Trophy, Sparkles, RotateCcw, Filter, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
+import { FlagImage } from './FlagImage';
+import { getCurrencyDisplayName } from '../utils/currencyName';
 
 interface CultureQuizProps {
   onEarnXP: (amount: number) => void;
@@ -40,10 +42,10 @@ export const CultureCurrencyReligionQuiz: React.FC<CultureQuizProps> = ({ onEarn
     let otherValues: string[] = [];
 
     if (step === 'currency') {
-      targetValue = currentCountry.currency;
+      targetValue = getCurrencyDisplayName(currentCountry.currency);
       otherValues = filteredCountries
-        .filter((c) => c.currency !== targetValue)
-        .map((c) => c.currency);
+        .map((country) => getCurrencyDisplayName(country.currency))
+        .filter((currency) => currency !== targetValue);
     } else if (step === 'language') {
       targetValue = currentCountry.language;
       otherValues = filteredCountries
@@ -67,7 +69,7 @@ export const CultureCurrencyReligionQuiz: React.FC<CultureQuizProps> = ({ onEarn
     setIsAnswered(true);
 
     let isCorrect = false;
-    if (step === 'currency') isCorrect = choice === currentCountry.currency;
+    if (step === 'currency') isCorrect = choice === getCurrencyDisplayName(currentCountry.currency);
     else if (step === 'language') isCorrect = choice === currentCountry.language;
     else isCorrect = choice === currentCountry.religion;
 
@@ -172,7 +174,13 @@ export const CultureCurrencyReligionQuiz: React.FC<CultureQuizProps> = ({ onEarn
           {/* Country Spotlight Card */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-slate-950/80 border border-slate-800 mb-6">
             <div className="flex items-center gap-4 text-center sm:text-left">
-              <span className="text-5xl filter drop-shadow-md">{currentCountry.flag}</span>
+              <FlagImage
+                key={currentCountry.code}
+                countryCode={currentCountry.code}
+                emoji={currentCountry.flag}
+                alt={`${currentCountry.name} flag`}
+                className="h-12 w-18 rounded object-contain drop-shadow-md"
+              />
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                   Target Nation:
@@ -237,7 +245,7 @@ export const CultureCurrencyReligionQuiz: React.FC<CultureQuizProps> = ({ onEarn
                 : 'Question 3: Dominant Faith / Religion'}
             </span>
             <h4 className="text-xl sm:text-2xl font-black text-white">
-              {step === 'currency' && `What money / currency is officially used in ${currentCountry.name}?`}
+              {step === 'currency' && `What currency is officially used in ${currentCountry.name}?`}
               {step === 'language' && `What is the primary official language of ${currentCountry.name}?`}
               {step === 'religion' && `What is the predominant religious tradition in ${currentCountry.name}?`}
             </h4>
@@ -248,7 +256,7 @@ export const CultureCurrencyReligionQuiz: React.FC<CultureQuizProps> = ({ onEarn
             {currentOptions.map((option, i) => {
               const isSelected = selectedAnswer === option;
               let isTarget = false;
-              if (step === 'currency') isTarget = option === currentCountry.currency;
+              if (step === 'currency') isTarget = option === getCurrencyDisplayName(currentCountry.currency);
               else if (step === 'language') isTarget = option === currentCountry.language;
               else isTarget = option === currentCountry.religion;
 

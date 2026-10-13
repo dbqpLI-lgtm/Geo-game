@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GameSettingsProvider, useGameSettings } from './context/GameSettingsContext';
 import { GeoNavbar, GameMode } from './components/GeoNavbar';
@@ -15,7 +15,6 @@ import { CountryNamingQuiz } from './components/CountryNamingQuiz';
 import { WorldCapitalsQuiz } from './components/WorldCapitalsQuiz';
 import { CultureCurrencyReligionQuiz } from './components/CultureCurrencyReligionQuiz';
 import { CountryOutlineQuiz } from './components/CountryOutlineQuiz';
-import { GeoGuessrGame } from './components/GeoGuessrGame';
 import { FlagMakerStudio } from './components/FlagMakerStudio';
 import { CountryNicknamesQuiz } from './components/CountryNicknamesQuiz';
 import { StateNamingQuiz } from './components/StateNamingQuiz';
@@ -23,6 +22,10 @@ import { FlagSprintQuiz } from './components/FlagSprintQuiz';
 import { PhysicalGeoQuiz } from './components/PhysicalGeoQuiz';
 import { GovernmentLeadersQuiz } from './components/GovernmentLeadersQuiz';
 import { AICustomQuiz } from './components/AICustomQuiz';
+
+const CityLocationQuiz = React.lazy(() =>
+  import('./components/CityLocationQuiz').then((module) => ({ default: module.CityLocationQuiz }))
+);
 import { WorldLeadersQuiz } from './components/WorldLeadersQuiz';
 import {
   Globe2,
@@ -36,7 +39,6 @@ import {
   Building2,
   Eye,
   Tag,
-  Navigation,
   Coins,
   Calendar,
   LogIn,
@@ -160,10 +162,10 @@ function AppContent() {
       activeBorder: 'border-teal-500 bg-teal-950/30',
     },
     {
-      id: 'geoguessr',
-      label: 'GeoGuessr Mode',
-      desc: 'Street Panorama & Map Pin',
-      icon: <Navigation className="w-5 h-5 text-emerald-400" />,
+      id: 'city-map',
+      label: 'Find the City',
+      desc: 'Pinpoint Cities on Satellite',
+      icon: <MapPin className="w-5 h-5 text-emerald-400" />,
       color: 'hover:border-emerald-500/50',
       activeBorder: 'border-emerald-500 bg-emerald-950/30',
     },
@@ -311,12 +313,16 @@ function AppContent() {
           <>
             {currentMode === 'daily' && <DailyChallenge onEarnXP={handleEarnXP} />}
             {currentMode === 'countries' && <CountryNamingQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'city-map' && (
+              <Suspense fallback={<div className="mx-auto h-[560px] max-w-6xl animate-pulse rounded-3xl border border-slate-800 bg-slate-900" />}>
+                <CityLocationQuiz onEarnXP={handleEarnXP} />
+              </Suspense>
+            )}
             {currentMode === 'capitals' && <WorldCapitalsQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'leaders' && <WorldLeadersQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'government-leaders' && <GovernmentLeadersQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'culture' && <CultureCurrencyReligionQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'outlines' && <CountryOutlineQuiz onEarnXP={handleEarnXP} />}
-            {currentMode === 'geoguessr' && <GeoGuessrGame onEarnXP={handleEarnXP} />}
             {currentMode === 'flag-maker' && <FlagMakerStudio onEarnXP={handleEarnXP} />}
             {currentMode === 'nicknames' && <CountryNicknamesQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'states' && <StateNamingQuiz onEarnXP={handleEarnXP} />}

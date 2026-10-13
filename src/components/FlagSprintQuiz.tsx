@@ -19,6 +19,7 @@ import {
 import confetti from 'canvas-confetti';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
+import { FlagImage } from './FlagImage';
 
 interface FlagSprintQuizProps {
   onEarnXP: (amount: number) => void;
@@ -349,9 +350,13 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
         <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-8 backdrop-blur-xl shadow-2xl text-center space-y-6">
           {/* Large Flag Presentation */}
           <div className="py-2">
-            <div className="text-8xl sm:text-9xl filter drop-shadow-2xl select-none animate-in zoom-in-95 duration-200">
-              {currentCountry.flag}
-            </div>
+            <FlagImage
+              key={currentCountry.code}
+              countryCode={currentCountry.code}
+              emoji={currentCountry.flag}
+              alt={`${currentCountry.name} flag`}
+              className="mx-auto h-32 w-48 rounded-lg object-contain shadow-2xl sm:h-40 sm:w-60"
+            />
             <div className="mt-3 text-xs text-slate-400">
               Continent: <strong className="text-slate-200">{currentCountry.continent}</strong>
             </div>

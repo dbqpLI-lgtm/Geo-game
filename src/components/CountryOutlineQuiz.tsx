@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Eye, HelpCircle, CheckCircle2, XCircle, ArrowRight, Lightbulb, Sparkles, Trophy, RotateCcw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { COUNTRY_OUTLINES, CountryOutline } from '../data/outlinesAndGeoData';
+import { ALL_197_COUNTRIES } from '../data/all197Countries';
+import { FlagImage } from './FlagImage';
+
+const CountryOutlineShape = React.lazy(() =>
+  import('./CountryOutlineShape').then((module) => ({ default: module.CountryOutlineShape }))
+);
 
 interface CountryOutlineQuizProps {
   onEarnXP: (amount: number) => void;
@@ -16,6 +22,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
   const [isFinished, setIsFinished] = useState(false);
 
   const currentItem: CountryOutline = COUNTRY_OUTLINES[currentIndex];
+  const flagCountry = ALL_197_COUNTRIES.find((country) => country.name === currentItem.name);
 
   const handleSelect = (choice: string) => {
     if (isAnswered) return;
@@ -107,33 +114,11 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
               </button>
             </div>
 
-            {/* Glowing Vector Outline */}
+            {/* Actual country boundary from Natural Earth */}
             <div className="w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center my-4 relative">
-              <svg
-                viewBox={currentItem.viewBox}
-                className="w-full h-full filter drop-shadow-[0_0_18px_rgba(45,212,191,0.4)] transition-all duration-500"
-              >
-                {/* Background glow shadow */}
-                <path
-                  d={currentItem.svgPath}
-                  fill="none"
-                  stroke="#2dd4bf"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity="0.3"
-                />
-                {/* Main silhouette fill */}
-                <path
-                  d={currentItem.svgPath}
-                  fill="#115e59"
-                  stroke="#2dd4bf"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-colors duration-300 hover:fill-teal-700"
-                />
-              </svg>
+              <Suspense fallback={<div className="h-48 w-48 animate-pulse rounded-xl bg-slate-800" />}>
+                <CountryOutlineShape countryName={currentItem.name} />
+              </Suspense>
             </div>
 
             {showHint && (
@@ -190,7 +175,14 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
               {isAnswered && (
                 <div className="p-4 rounded-2xl bg-teal-950/40 border border-teal-500/30 text-xs text-teal-200 mb-4 animate-fadeIn">
                   <div className="font-bold text-white mb-1 flex items-center gap-1.5">
-                    <span className="text-lg">{currentItem.flag}</span>
+                    {flagCountry && (
+                      <FlagImage
+                        countryCode={flagCountry.code}
+                        emoji={currentItem.flag}
+                        alt={`${currentItem.name} flag`}
+                        className="h-6 w-9 rounded object-contain"
+                      />
+                    )}
                     <span>{currentItem.name} Verified:</span>
                   </div>
                   <p className="text-slate-300">{currentItem.funFact}</p>

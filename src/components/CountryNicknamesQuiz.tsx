@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Tag, Sparkles, CheckCircle2, XCircle, ArrowRight, Trophy, RotateCcw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { COUNTRY_NICKNAMES_LIST, CountryNicknameItem } from '../data/outlinesAndGeoData';
+import { ALL_197_COUNTRIES } from '../data/all197Countries';
+import { FlagImage } from './FlagImage';
 
 interface CountryNicknamesQuizProps {
   onEarnXP: (amount: number) => void;
@@ -15,6 +17,7 @@ export const CountryNicknamesQuiz: React.FC<CountryNicknamesQuizProps> = ({ onEa
   const [isGameOver, setIsGameOver] = useState(false);
 
   const currentItem: CountryNicknameItem = COUNTRY_NICKNAMES_LIST[currentIndex];
+  const flagCountry = ALL_197_COUNTRIES.find((country) => country.name === currentItem.country);
 
   const handleSelect = (choice: string) => {
     if (isAnswered) return;
@@ -132,7 +135,16 @@ export const CountryNicknamesQuiz: React.FC<CountryNicknamesQuizProps> = ({ onEa
           {isAnswered && (
             <div className="max-w-lg mx-auto p-4 rounded-2xl bg-orange-950/40 border border-orange-500/30 text-xs text-orange-200 text-left mb-6 animate-fadeIn">
               <div className="font-bold text-white mb-1 flex items-center gap-1.5">
-                <span className="text-xl">{currentItem.flag}</span>
+                {flagCountry ? (
+                  <FlagImage
+                    countryCode={flagCountry.code}
+                    emoji={currentItem.flag}
+                    alt={`${currentItem.country} flag`}
+                    className="h-6 w-9 rounded object-contain"
+                  />
+                ) : (
+                  <span className="text-xl">{currentItem.flag}</span>
+                )}
                 <span>{currentItem.country} Origin:</span>
               </div>
               <p className="text-slate-300 leading-relaxed">{currentItem.explanation}</p>

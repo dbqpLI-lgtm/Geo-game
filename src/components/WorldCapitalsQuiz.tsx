@@ -15,6 +15,7 @@ import {
 import confetti from 'canvas-confetti';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
+import { FlagImage } from './FlagImage';
 
 interface WorldCapitalsQuizProps {
   onEarnXP: (amount: number) => void;
@@ -220,9 +221,13 @@ export const WorldCapitalsQuiz: React.FC<WorldCapitalsQuizProps> = ({ onEarnXP }
           </div>
 
           <div className="my-4">
-            <span className="text-7xl filter drop-shadow-lg inline-block mb-2">
-              {currentCountry.flag}
-            </span>
+            <FlagImage
+              key={currentCountry.code}
+              countryCode={currentCountry.code}
+              emoji={currentCountry.flag}
+              alt={`${currentCountry.name} flag`}
+              className="mx-auto mb-2 h-24 w-36 rounded object-contain drop-shadow-lg"
+            />
             <span className="text-xs uppercase font-bold tracking-widest text-slate-400 block mb-1">
               What is the capital city of:
             </span>

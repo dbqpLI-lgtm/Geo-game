@@ -27,6 +27,7 @@ import {
 import confetti from 'canvas-confetti';
 import { COUNTRIES_WITH_LEADERS, CountryLeadersData, LeaderItem } from '../data/worldLeadersData';
 import { ALL_197_COUNTRIES } from '../data/all197Countries';
+import { FlagImage } from './FlagImage';
 import { useGameSettings } from '../context/GameSettingsContext';
 
 interface WorldLeadersQuizProps {
@@ -461,7 +462,13 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
           {/* Country Title & Flag */}
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <span className="text-4xl filter drop-shadow-md">{activeCountryData.flag}</span>
+              <FlagImage
+                key={selectedCountryCode}
+                countryCode={selectedCountryCode}
+                emoji={activeCountryData.flag}
+                alt={`${activeCountryData.countryName} flag`}
+                className="h-10 w-14 rounded object-contain drop-shadow-md"
+              />
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -550,7 +557,12 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
                       : 'bg-slate-950/60 hover:bg-slate-800/80 text-slate-300 border border-slate-800'
                   }`}
                 >
-                  <span className="text-sm">{data.flag}</span>
+                  <FlagImage
+                    countryCode={code}
+                    emoji={data.flag}
+                    alt={`${data.countryName} flag`}
+                    className="h-5 w-8 rounded object-contain"
+                  />
                   <span>{data.countryName}</span>
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full ${
@@ -980,7 +992,13 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
             </button>
 
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{activeCountryData.flag}</span>
+              <FlagImage
+                key={selectedCountryCode}
+                countryCode={selectedCountryCode}
+                emoji={activeCountryData.flag}
+                alt={`${activeCountryData.countryName} flag`}
+                className="h-8 w-12 rounded object-contain"
+              />
               <div>
                 <span className="text-xs font-mono font-bold text-indigo-400">
                   Leader #{selectedBioLeader.number} • {activeCountryData.countryName}
@@ -1072,7 +1090,12 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
                     className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 hover:bg-slate-800 border border-slate-800/80 transition-all text-left group"
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="text-xl">{country.flag}</span>
+                      <FlagImage
+                        countryCode={country.code}
+                        emoji={country.flag}
+                        alt={`${country.name} flag`}
+                        className="h-7 w-10 rounded object-contain"
+                      />
                       <div>
                         <div className="text-xs font-bold text-white group-hover:text-sky-300">
                           {country.name}

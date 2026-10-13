@@ -1,8 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { Globe2, Search, Trophy, CheckCircle2, HelpCircle, Sparkles, Filter, Clock, RotateCcw, Info, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
+import { getCurrencyDisplayName } from '../utils/currencyName';
+import { FlagImage } from './FlagImage';
+
+const CountryDiscoveryMap = React.lazy(() =>
+  import('./CountryDiscoveryMap').then((module) => ({ default: module.CountryDiscoveryMap }))
+);
 
 interface CountryNamingQuizProps {
   onEarnXP: (amount: number) => void;
@@ -239,6 +245,10 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
         </div>
       </div>
 
+      <Suspense fallback={<div className="h-[320px] animate-pulse rounded-3xl border border-slate-800 bg-slate-900 sm:h-[440px]" />}>
+        <CountryDiscoveryMap discoveredCountryCodes={foundCountries} />
+      </Suspense>
+
       {/* Country Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {availableCountries.map((country) => {
@@ -258,9 +268,16 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl filter drop-shadow">
-                  {shouldShow ? country.flag : '🌐'}
-                </span>
+                {shouldShow ? (
+                  <FlagImage
+                    countryCode={country.code}
+                    emoji={country.flag}
+                    alt={`${country.name} flag`}
+                    className="h-7 w-10 rounded object-contain"
+                  />
+                ) : (
+                  <span className="text-2xl">🌐</span>
+                )}
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-white/5">
                   {country.code}
                 </span>
@@ -301,7 +318,13 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
             </button>
 
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-5xl">{selectedCountryModal.flag}</span>
+              <FlagImage
+                key={selectedCountryModal.code}
+                countryCode={selectedCountryModal.code}
+                emoji={selectedCountryModal.flag}
+                alt={`${selectedCountryModal.name} flag`}
+                className="h-14 w-20 rounded object-contain"
+              />
               <div>
                 <h3 className="text-2xl font-black text-white">{selectedCountryModal.name}</h3>
                 <span className="text-xs text-indigo-400 font-semibold">
@@ -326,7 +349,7 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
             <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
                 <span className="text-[9px] uppercase text-amber-400 font-bold">Currency</span>
-                <div className="text-xs font-bold text-white mt-0.5 truncate">{selectedCountryModal.currency}</div>
+                <div className="text-xs font-bold text-white mt-0.5 truncate">{getCurrencyDisplayName(selectedCountryModal.currency)}</div>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
                 <span className="text-[9px] uppercase text-sky-400 font-bold">Language</span>
