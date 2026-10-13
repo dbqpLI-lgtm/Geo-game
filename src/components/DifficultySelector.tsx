@@ -19,6 +19,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({ compact 
     timerDesc: string;
     hintsDesc: string;
     xpBadge: string;
+    questionCount: string;
   }> = [
     {
       id: 'easy',
@@ -30,6 +31,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({ compact 
       timerDesc: '1.8x Time Limit',
       hintsDesc: 'Full Hints Unlocked',
       xpBadge: '1.0x XP',
+      questionCount: 'Up to 40 country questions',
     },
     {
       id: 'medium',
@@ -41,6 +43,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({ compact 
       timerDesc: 'Standard Timer',
       hintsDesc: '1 Hint Per Question',
       xpBadge: '1.25x XP',
+      questionCount: 'Up to 100 country questions',
     },
     {
       id: 'hard',
@@ -52,6 +55,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({ compact 
       timerDesc: 'Blitz 0.5x Time Limit',
       hintsDesc: 'Zero Hints Allowed',
       xpBadge: '1.75x Bonus XP',
+      questionCount: 'Up to all 197 countries',
     },
   ];
 
@@ -75,7 +79,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({ compact 
                   ? diff.activeBg
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
               }`}
-              title={`${diff.label}: ${diff.timerDesc}, ${diff.hintsDesc} (${diff.xpBadge})`}
+              title={`${diff.label}: ${diff.timerDesc}, ${diff.hintsDesc}, ${diff.questionCount} (${diff.xpBadge})`}
             >
               <span>{diff.icon}</span>
               <span>{diff.label}</span>
@@ -112,7 +116,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({ compact 
               Quiz Difficulty & Pace
             </h4>
             <p className="text-[11px] text-slate-400">
-              Adjust countdown timers, hint restrictions, and XP reward multipliers.
+              Adjust timers, hints, XP, and country-quiz pool sizes.
             </p>
           </div>
         </div>
@@ -165,6 +169,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({ compact 
                   <HelpCircle className="w-3 h-3 text-amber-400" />
                   <span>{diff.hintsDesc}</span>
                 </div>
+                <div className="text-slate-400">{diff.questionCount}</div>
               </div>
             </button>
           );

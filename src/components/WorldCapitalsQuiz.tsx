@@ -16,6 +16,7 @@ import confetti from 'canvas-confetti';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
 import { FlagImage } from './FlagImage';
+import { selectCountryQuizPool } from '../utils/countryQuizPool';
 
 interface WorldCapitalsQuizProps {
   onEarnXP: (amount: number) => void;
@@ -41,12 +42,13 @@ export const WorldCapitalsQuiz: React.FC<WorldCapitalsQuizProps> = ({ onEarnXP }
 
   // Filter countries that have capitals defined
   const availableCountries = useMemo(() => {
-    return ALL_197_COUNTRIES.filter((c) => {
+    const regionCountries = ALL_197_COUNTRIES.filter((c) => {
       if (selectedContinent === 'All') return true;
       if (selectedContinent === 'Americas') return c.continent === 'North America' || c.continent === 'South America';
       return c.continent === selectedContinent;
     });
-  }, [selectedContinent]);
+    return selectCountryQuizPool(regionCountries, difficulty);
+  }, [selectedContinent, difficulty]);
 
   const currentCountry: CountryFullItem = availableCountries[currentIndex % availableCountries.length];
 
@@ -56,6 +58,15 @@ export const WorldCapitalsQuiz: React.FC<WorldCapitalsQuizProps> = ({ onEarnXP }
     setEliminatedChoices(new Set());
     setHintUsedThisQuestion(false);
   }, [currentIndex, difficulty, isLearningMode]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+    setSelectedChoice(null);
+    setIsAnswered(false);
+    setScore(0);
+    setStreak(0);
+    setIsGameOver(false);
+  }, [difficulty]);
 
   // Countdown timer effect
   useEffect(() => {

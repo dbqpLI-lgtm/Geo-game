@@ -19,6 +19,8 @@ import {
   ChevronDown,
   BookOpen,
   Crown,
+  Swords,
+  Waves,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DifficultySelector } from './DifficultySelector';
@@ -37,6 +39,8 @@ export type GameMode =
   | 'states'
   | 'flag-sprint'
   | 'physical-geo'
+  | 'war-history'
+  | 'world-features'
   | 'government-leaders'
   | 'ai-custom';
 
@@ -80,6 +84,8 @@ export const GeoNavbar: React.FC<GeoNavbarProps> = ({
     { id: 'states', label: 'States', icon: <MapPin className="w-4 h-4 text-amber-400" />, badge: '50 States' },
     { id: 'flag-sprint', label: 'Name the Flag', icon: <Zap className="w-4 h-4 text-rose-400" />, badge: 'Guess' },
     { id: 'physical-geo', label: 'Physical Wonders', icon: <Mountain className="w-4 h-4 text-cyan-400" /> },
+    { id: 'war-history', label: 'War History', icon: <Swords className="w-4 h-4 text-rose-400" />, badge: 'Dates' },
+    { id: 'world-features', label: 'Seas & Monuments', icon: <Waves className="w-4 h-4 text-cyan-400" />, badge: 'Map' },
     { id: 'government-leaders', label: 'Leaders', icon: <Crown className="w-4 h-4 text-violet-400" />, badge: 'Prime Ministers' },
     { id: 'ai-custom', label: 'AI Custom Quiz', icon: <Sparkles className="w-4 h-4 text-purple-400" />, badge: 'Gemini' },
   ];

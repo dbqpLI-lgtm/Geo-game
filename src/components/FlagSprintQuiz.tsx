@@ -20,6 +20,7 @@ import confetti from 'canvas-confetti';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
 import { FlagImage } from './FlagImage';
+import { selectCountryQuizPool } from '../utils/countryQuizPool';
 
 interface FlagSprintQuizProps {
   onEarnXP: (amount: number) => void;
@@ -54,11 +55,11 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
     });
   }, [selectedContinent]);
 
-  // Shuffled round of 15 questions
+  // Select a difficulty-sized round from the selected region.
   const [roundList, setRoundList] = useState<CountryFullItem[]>([]);
 
   const startNewRound = () => {
-    const shuffled = [...continentPool].sort(() => 0.5 - Math.random()).slice(0, 15);
+    const shuffled = selectCountryQuizPool(continentPool, difficulty);
     setRoundList(shuffled);
     setCurrentIndex(0);
     setTypedGuess('');
@@ -260,7 +261,7 @@ export const FlagSprintQuiz: React.FC<FlagSprintQuizProps> = ({ onEarnXP }) => {
           </div>
           <h2 className="text-2xl font-black text-white">Identify the Nation by Banner</h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Look at the flag and name the sovereign country. Type it out or play multiple choice!
+            Name every country in the selected region from its flag. Type it out or play multiple choice!
           </p>
         </div>
 

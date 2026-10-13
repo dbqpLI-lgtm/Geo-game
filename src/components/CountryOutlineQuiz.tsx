@@ -1,8 +1,8 @@
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Eye, HelpCircle, CheckCircle2, XCircle, ArrowRight, Lightbulb, Sparkles, Trophy, RotateCcw } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { COUNTRY_OUTLINES, CountryOutline } from '../data/outlinesAndGeoData';
-import { ALL_197_COUNTRIES } from '../data/all197Countries';
+import { createCountryOutlineQuestions } from '../utils/countryOutlineQuiz';
+import { useGameSettings } from '../context/GameSettingsContext';
 import { FlagImage } from './FlagImage';
 
 const CountryOutlineShape = React.lazy(() =>
@@ -14,6 +14,8 @@ interface CountryOutlineQuizProps {
 }
 
 export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP }) => {
+  const { difficulty } = useGameSettings();
+  const [questions, setQuestions] = useState(() => createCountryOutlineQuestions(difficulty));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
@@ -21,15 +23,25 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
 
-  const currentItem: CountryOutline = COUNTRY_OUTLINES[currentIndex];
-  const flagCountry = ALL_197_COUNTRIES.find((country) => country.name === currentItem.name);
+  const currentItem = questions[currentIndex];
+  const flagCountry = currentItem?.country;
+
+  useEffect(() => {
+    setQuestions(createCountryOutlineQuestions(difficulty));
+    setCurrentIndex(0);
+    setSelectedChoice(null);
+    setIsAnswered(false);
+    setShowHint(false);
+    setScore(0);
+    setIsFinished(false);
+  }, [difficulty]);
 
   const handleSelect = (choice: string) => {
     if (isAnswered) return;
     setSelectedChoice(choice);
     setIsAnswered(true);
 
-    const isCorrect = choice === currentItem.name;
+    const isCorrect = choice === currentItem.country.name;
     if (isCorrect) {
       setScore((prev) => prev + 1);
       onEarnXP(40);
@@ -37,7 +49,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
   };
 
   const handleNext = () => {
-    if (currentIndex + 1 < COUNTRY_OUTLINES.length) {
+    if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedChoice(null);
       setIsAnswered(false);
@@ -54,6 +66,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
   };
 
   const handleRestart = () => {
+    setQuestions(createCountryOutlineQuestions(difficulty));
     setCurrentIndex(0);
     setSelectedChoice(null);
     setIsAnswered(false);
@@ -62,7 +75,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
     setIsFinished(false);
   };
 
-  const isCorrect = selectedChoice === currentItem?.name;
+  const isCorrect = selectedChoice === currentItem?.country.name;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -74,7 +87,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
               <Eye className="w-3.5 h-3.5" /> Shape & Silhouette Recognition
             </span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-semibold">
-              Round {currentIndex + 1} of {COUNTRY_OUTLINES.length}
+              Round {currentIndex + 1} of {questions.length}
             </span>
           </div>
           <h2 className="text-2xl font-black text-white">What Country is Outlined?</h2>
@@ -86,7 +99,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
         <div className="flex items-center gap-3">
           <div className="text-right">
             <div className="text-xl font-black text-teal-400">
-              {score} / {COUNTRY_OUTLINES.length}
+              {score} / {questions.length}
             </div>
             <span className="text-[10px] text-slate-400 uppercase tracking-wider">Score</span>
           </div>
@@ -100,7 +113,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
           <div className="md:col-span-7 bg-slate-900/70 border border-slate-800/80 rounded-3xl p-8 backdrop-blur-xl shadow-xl flex flex-col items-center justify-center relative min-h-[380px]">
             <div className="absolute top-4 left-4 flex items-center gap-2">
               <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-teal-950/80 text-teal-300 border border-teal-800/40">
-                {currentItem.difficulty} Silhouette
+                World silhouette
               </span>
             </div>
 
@@ -117,7 +130,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
             {/* Actual country boundary from Natural Earth */}
             <div className="w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center my-4 relative">
               <Suspense fallback={<div className="h-48 w-48 animate-pulse rounded-xl bg-slate-800" />}>
-                <CountryOutlineShape countryName={currentItem.name} />
+                <CountryOutlineShape countryName={currentItem.country.name} />
               </Suspense>
             </div>
 
@@ -137,9 +150,10 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
               </h3>
 
               <div className="space-y-2.5 mb-4">
-                {currentItem.options.map((opt, i) => {
-                  const isSelected = selectedChoice === opt;
-                  const isTarget = opt === currentItem.name;
+                {currentItem.options.map((option, i) => {
+                  const optionName = option.name;
+                  const isSelected = selectedChoice === optionName;
+                  const isTarget = optionName === currentItem.country.name;
 
                   let style =
                     'bg-slate-950/80 border-slate-800 text-slate-200 hover:border-teal-500/50 hover:bg-slate-900';
@@ -155,12 +169,12 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
 
                   return (
                     <button
-                      key={i}
-                      onClick={() => handleSelect(opt)}
+                      key={option.code}
+                      onClick={() => handleSelect(optionName)}
                       disabled={isAnswered}
                       className={`w-full p-4 rounded-2xl border text-left text-sm font-bold transition-all flex items-center justify-between ${style}`}
                     >
-                      <span>{opt}</span>
+                      <span>{optionName}</span>
                       {isAnswered && isTarget && (
                         <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                       )}
@@ -178,12 +192,12 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
                     {flagCountry && (
                       <FlagImage
                         countryCode={flagCountry.code}
-                        emoji={currentItem.flag}
-                        alt={`${currentItem.name} flag`}
+                        emoji={currentItem.country.flag}
+                        alt={`${currentItem.country.name} flag`}
                         className="h-6 w-9 rounded object-contain"
                       />
                     )}
-                    <span>{currentItem.name} Verified:</span>
+                    <span>{currentItem.country.name} Verified:</span>
                   </div>
                   <p className="text-slate-300">{currentItem.funFact}</p>
                 </div>
@@ -196,7 +210,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
                 disabled={!isAnswered}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold text-xs shadow-lg shadow-teal-600/30 transition disabled:opacity-40 active:scale-98"
               >
-                <span>{currentIndex + 1 === COUNTRY_OUTLINES.length ? 'See Final Score' : 'Next Silhouette'}</span>
+                <span>{currentIndex + 1 === questions.length ? 'See Final Score' : 'Next Silhouette'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -211,7 +225,7 @@ export const CountryOutlineQuiz: React.FC<CountryOutlineQuizProps> = ({ onEarnXP
 
           <h3 className="text-2xl font-black text-white mb-1">Outline Recognition Mastered!</h3>
           <p className="text-sm text-slate-300 mb-6">
-            You accurately recognized <strong className="text-teal-400 font-mono text-lg">{score}</strong> out of {COUNTRY_OUTLINES.length} global silhouettes!
+            You accurately recognized <strong className="text-teal-400 font-mono text-lg">{score}</strong> out of {questions.length} global silhouettes!
           </p>
 
           <button

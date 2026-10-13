@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { CheckCircle2, Crown, RotateCcw, Search, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { GOVERNMENT_LEADER_ROSTERS } from '../data/governmentLeaders';
+import { useGameSettings } from '../context/GameSettingsContext';
+import { matchesLeaderFirstAndLastName } from '../utils/leaderNameMatching';
 
 interface GovernmentLeadersQuizProps {
   onEarnXP: (amount: number) => void;
@@ -15,6 +17,7 @@ const normalize = (value: string) =>
     .replace(/[^a-z0-9]/g, '');
 
 export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ onEarnXP }) => {
+  const { difficulty } = useGameSettings();
   const [selectedCountry, setSelectedCountry] = useState(GOVERNMENT_LEADER_ROSTERS[0].country);
   const [answer, setAnswer] = useState('');
   const [foundLeaders, setFoundLeaders] = useState<Set<string>>(new Set());
@@ -33,27 +36,56 @@ export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ on
     if (!answer.trim() || isRevealed || isComplete) return;
 
     const guess = normalize(answer);
-    const match = roster.leaders.find(
-      (leader) =>
-        !foundLeaders.has(leader.name) &&
-        [leader.name, ...leader.aliases].some((name) => normalize(name) === guess),
-    );
+    const matches = roster.leaders.filter((leader) => {
+      if (foundLeaders.has(leader.name)) return false;
+      if (difficulty === 'hard') {
+        return matchesLeaderFirstAndLastName(answer, leader.name);
+      }
+      const surname = leader.name.trim().split(/\s+/).at(-1) ?? '';
+      return (
+        [leader.name, ...leader.aliases].some((name) => normalize(name) === guess) ||
+        normalize(surname) === guess
+      );
+    });
 
-    if (!match) {
+    if (matches.length === 0) {
       const alreadyFound = roster.leaders.some(
         (leader) =>
           foundLeaders.has(leader.name) &&
-          [leader.name, ...leader.aliases].some((name) => normalize(name) === guess),
+          (difficulty === 'hard'
+            ? matchesLeaderFirstAndLastName(answer, leader.name)
+            : [leader.name, ...leader.aliases, leader.name.trim().split(/\s+/).at(-1) ?? '']
+                .some((name) => normalize(name) === guess)),
       );
-      setMessage(alreadyFound ? 'You already named that leader.' : 'Not on this roster—try another name.');
+      setMessage(
+        difficulty === 'hard' && !alreadyFound
+          ? 'Hard mode requires the leader’s full first and last name.'
+          : alreadyFound
+            ? 'You already named that leader.'
+            : 'Not on this roster—try another name.',
+      );
       return;
     }
 
-    const nextFound = new Set(foundLeaders).add(match.name);
+    const repeatedSurname = matches.length > 1 &&
+      new Set(matches.map((leader) => normalize(leader.name.trim().split(/\s+/).at(-1) ?? ''))).size === 1 &&
+      normalize(matches[0].name.trim().split(/\s+/).at(-1) ?? '') === guess;
+    if (matches.length > 1 && !repeatedSurname) {
+      setMessage(`That name matches multiple leaders. Enter a full name to distinguish them.`);
+      return;
+    }
+
+    const leadersToAdd = repeatedSurname ? matches : [matches[0]];
+    const nextFound = new Set(foundLeaders);
+    leadersToAdd.forEach((leader) => nextFound.add(leader.name));
     setFoundLeaders(nextFound);
     setAnswer('');
-    setMessage(`Correct: ${match.name}`);
-    onEarnXP(15);
+    setMessage(
+      repeatedSurname
+        ? `Correct: ${leadersToAdd.length} leaders share the surname ${matches[0].name.trim().split(/\s+/).at(-1)}.`
+        : `Correct: ${leadersToAdd[0].name}`,
+    );
+    onEarnXP(15 * leadersToAdd.length);
 
     if (nextFound.size === roster.leaders.length) {
       setMessage('You named every leader on this roster!');
@@ -80,7 +112,9 @@ export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ on
             </span>
             <h2 className="text-2xl font-black text-white">Name Every Prime Minister</h2>
             <p className="mt-1 max-w-xl text-sm text-slate-400">
-              Pick a country and name its heads of government in any order. Common short names and surnames are accepted.
+              {difficulty === 'hard'
+                ? 'Pick a country and name its heads of government using each person’s full first and last name.'
+                : 'Pick a country and name its heads of government in any order. Common short names and surnames are accepted; a shared surname names every matching leader.'}
             </p>
           </div>
           <label className="flex min-w-52 flex-col gap-1.5 text-xs font-bold text-slate-300">
@@ -124,7 +158,11 @@ export const GovernmentLeadersQuiz: React.FC<GovernmentLeadersQuizProps> = ({ on
               value={answer}
               onChange={(event) => setAnswer(event.target.value)}
               disabled={isComplete || isRevealed}
-              placeholder={`Name a prime minister of ${roster.country}...`}
+              placeholder={
+                difficulty === 'hard'
+                  ? `Type first and last name of a prime minister of ${roster.country}...`
+                  : `Name a prime minister of ${roster.country}...`
+              }
               className="w-full rounded-xl border border-slate-700 bg-slate-950 py-3 pl-10 pr-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 disabled:opacity-60"
             />
           </div>

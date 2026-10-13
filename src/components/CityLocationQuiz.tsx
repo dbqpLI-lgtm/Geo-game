@@ -1,7 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, MapPin, Navigation, RotateCcw, Trophy } from 'lucide-react';
 import { CircleMarker, MapContainer, Polyline, TileLayer, useMapEvents } from 'react-leaflet';
 import { GeoGuessrLocation } from '../data/outlinesAndGeoData';
+import { ALL_COUNTRY_CAPITAL_LOCATIONS } from '../data/countryCapitalCoordinates';
+import { useGameSettings } from '../context/GameSettingsContext';
+import { getCountryQuizQuestionCount, shuffleItems } from '../utils/countryQuizPool';
 import 'leaflet/dist/leaflet.css';
 
 interface CityLocationQuizProps {
@@ -117,12 +120,14 @@ function distanceKm(
   return Math.round(6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value)));
 }
 
-function makeRound(): CityLocation[] {
-  return [...CITY_LOCATIONS].sort(() => Math.random() - 0.5).slice(0, 10);
+function makeRound(difficulty: 'easy' | 'medium' | 'hard'): CityLocation[] {
+  const locations = difficulty === 'easy' ? CITY_LOCATIONS : ALL_COUNTRY_CAPITAL_LOCATIONS;
+  return shuffleItems(locations).slice(0, getCountryQuizQuestionCount(difficulty));
 }
 
 export const CityLocationQuiz: React.FC<CityLocationQuizProps> = ({ onEarnXP }) => {
-  const [round, setRound] = useState<CityLocation[]>(makeRound);
+  const { difficulty } = useGameSettings();
+  const [round, setRound] = useState<CityLocation[]>(() => makeRound(difficulty));
   const [roundIndex, setRoundIndex] = useState(0);
   const [guess, setGuess] = useState<{ lat: number; lon: number } | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -136,6 +141,15 @@ export const CityLocationQuiz: React.FC<CityLocationQuizProps> = ({ onEarnXP }) 
       : null,
     [city, guess, revealed]
   );
+
+  useEffect(() => {
+    setRound(makeRound(difficulty));
+    setRoundIndex(0);
+    setGuess(null);
+    setRevealed(false);
+    setScore(0);
+    setFinished(false);
+  }, [difficulty]);
 
   const handleGuess = () => {
     if (!guess || revealed) return;
@@ -158,7 +172,7 @@ export const CityLocationQuiz: React.FC<CityLocationQuizProps> = ({ onEarnXP }) 
   };
 
   const handleRestart = () => {
-    setRound(makeRound());
+    setRound(makeRound(difficulty));
     setRoundIndex(0);
     setGuess(null);
     setRevealed(false);
@@ -188,6 +202,11 @@ export const CityLocationQuiz: React.FC<CityLocationQuizProps> = ({ onEarnXP }) 
           </div>
           <h2 className="text-2xl font-black text-white">Find {city.city}, {city.country}</h2>
           <p className="mt-1 text-xs text-slate-400">Use the unlabeled satellite map. Click where you think the city is, then submit your guess.</p>
+          {difficulty !== 'easy' && (
+            <p className="mt-1 text-[10px] text-slate-500">
+              Capital coordinates: <a href="https://www.geonames.org/" target="_blank" rel="noreferrer" className="underline">GeoNames</a>
+            </p>
+          )}
         </div>
         <div className="text-right">
           <div className="text-2xl font-black text-emerald-300">{score.toLocaleString()}</div>

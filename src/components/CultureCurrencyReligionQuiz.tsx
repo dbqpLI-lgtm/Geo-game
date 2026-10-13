@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Coins, Languages, Church, CheckCircle2, XCircle, ArrowRight, Trophy, Sparkles, RotateCcw, Filter, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { FlagImage } from './FlagImage';
 import { getCurrencyDisplayName } from '../utils/currencyName';
+import { useGameSettings } from '../context/GameSettingsContext';
+import { selectCountryQuizPool } from '../utils/countryQuizPool';
 
 interface CultureQuizProps {
   onEarnXP: (amount: number) => void;
@@ -12,6 +14,7 @@ interface CultureQuizProps {
 type QuestionStep = 'currency' | 'language' | 'religion';
 
 export const CultureCurrencyReligionQuiz: React.FC<CultureQuizProps> = ({ onEarnXP }) => {
+  const { difficulty } = useGameSettings();
   const [selectedContinent, setSelectedContinent] = useState<string>('All');
   const [activeCountryIndex, setActiveCountryIndex] = useState(0);
   const [step, setStep] = useState<QuestionStep>('currency');
@@ -27,10 +30,11 @@ export const CultureCurrencyReligionQuiz: React.FC<CultureQuizProps> = ({ onEarn
 
   // Filter pool
   const filteredCountries = useMemo(() => {
-    return ALL_197_COUNTRIES.filter(
+    const regionCountries = ALL_197_COUNTRIES.filter(
       (c) => selectedContinent === 'All' || c.continent === selectedContinent
     );
-  }, [selectedContinent]);
+    return selectCountryQuizPool(regionCountries, difficulty);
+  }, [selectedContinent, difficulty]);
 
   const currentCountry: CountryFullItem = filteredCountries[activeCountryIndex % filteredCountries.length];
 
@@ -62,6 +66,16 @@ export const CultureCurrencyReligionQuiz: React.FC<CultureQuizProps> = ({ onEarn
     const uniqueOthers = Array.from(new Set(otherValues)).sort(() => 0.5 - Math.random()).slice(0, 3);
     return [targetValue, ...uniqueOthers].sort(() => 0.5 - Math.random());
   }, [currentCountry, step, activeCountryIndex, filteredCountries]);
+
+  useEffect(() => {
+    setActiveCountryIndex(0);
+    setStep('currency');
+    setSelectedAnswer(null);
+    setIsAnswered(false);
+    setAnswersStatus({ currency: false, language: false, religion: false });
+    setScore(0);
+    setStreak(0);
+  }, [difficulty]);
 
   const handleSelectOption = (choice: string) => {
     if (isAnswered) return;

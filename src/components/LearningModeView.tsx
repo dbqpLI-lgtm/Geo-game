@@ -18,8 +18,10 @@ import {
   Check,
   Star,
   Award,
+  History,
 } from 'lucide-react';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
+import { COUNTRY_FORMATION_HISTORIES } from '../data/countryFormationHistory';
 import { FlagImage } from './FlagImage';
 import { getCurrencyDisplayName } from '../utils/currencyName';
 
@@ -30,7 +32,7 @@ interface LearningModeViewProps {
 export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContinent, setSelectedContinent] = useState('All');
-  const [activeTab, setActiveTab] = useState<'flashcards' | 'atlas' | 'cheatsheet'>('flashcards');
+  const [activeTab, setActiveTab] = useState<'flashcards' | 'atlas' | 'cheatsheet' | 'origins'>('flashcards');
 
   // Flashcard Deck State
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -63,11 +65,32 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
         c.capital.toLowerCase().includes(q) ||
         c.currency.toLowerCase().includes(q) ||
         c.language.toLowerCase().includes(q) ||
-        c.religion.toLowerCase().includes(q);
+        c.religion.toLowerCase().includes(q) ||
+        (COUNTRY_FORMATION_HISTORIES.find((history) => history.code === c.code)?.story.toLowerCase().includes(q) ?? false);
 
       return matchesContinent && matchesQuery;
     });
   }, [selectedContinent, searchQuery]);
+
+  const originCountries = useMemo(
+    () =>
+      ALL_197_COUNTRIES.flatMap((country) => {
+        const history = COUNTRY_FORMATION_HISTORIES.find((entry) => entry.code === country.code);
+        if (!history) return [];
+        const matchesContinent =
+          selectedContinent === 'All' ||
+          (selectedContinent === 'Americas'
+            ? country.continent === 'North America' || country.continent === 'South America'
+            : country.continent === selectedContinent);
+        const query = searchQuery.toLowerCase().trim();
+        const matchesQuery =
+          !query ||
+          country.name.toLowerCase().includes(query) ||
+          history.story.toLowerCase().includes(query);
+        return matchesContinent && matchesQuery ? [{ country, history }] : [];
+      }),
+    [selectedContinent, searchQuery]
+  );
 
   const currentFlashcard = filteredCountries[currentCardIndex % (filteredCountries.length || 1)];
 
@@ -121,7 +144,7 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
           </div>
           <h2 className="text-2xl font-black text-white">Master All 196 World Nations</h2>
           <p className="text-xs text-slate-400 mt-1 max-w-xl">
-            Learn capitals, currencies, languages, religions, and flag layouts with flashcards and interactive reference tools at your own pace.
+            Learn country facts and the stories behind how nations formed, with flashcards and interactive reference tools at your own pace.
           </p>
         </div>
 
@@ -182,6 +205,16 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
           >
             📊 Quick Reference Matrix
           </button>
+          <button
+            onClick={() => setActiveTab('origins')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              activeTab === 'origins'
+                ? 'bg-purple-600 text-white shadow'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            🏛️ Nation Origins
+          </button>
         </div>
 
         {/* Search Input */}
@@ -189,7 +222,7 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
           <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Search country, capital, currency..."
+            placeholder="Search country, origin, capital, currency..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
@@ -374,6 +407,48 @@ export const LearningModeView: React.FC<LearningModeViewProps> = ({ onStartQuiz 
             </button>
           </div>
         </div>
+      )}
+
+      {activeTab === 'origins' && (
+        <section className="space-y-4">
+          <div className="rounded-2xl border border-purple-500/30 bg-purple-950/30 p-4">
+            <h3 className="flex items-center gap-2 text-lg font-black text-white">
+              <History className="h-5 w-5 text-purple-300" /> How nations formed
+            </h3>
+            <p className="mt-1 text-xs text-slate-300">
+              Explore independence, unification, and other milestones that shaped these countries.
+              Use the continent filters and search to find a story.
+            </p>
+          </div>
+          {originCountries.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {originCountries.map(({ country, history }) => (
+                <article
+                  key={country.code}
+                  className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4"
+                >
+                  <div className="mb-2 flex items-center gap-3">
+                    <FlagImage
+                      countryCode={country.code}
+                      emoji={country.flag}
+                      alt={`${country.name} flag`}
+                      className="h-7 w-10 rounded object-contain"
+                    />
+                    <div>
+                      <h4 className="font-bold text-white">{history.title}</h4>
+                      <span className="text-[11px] text-purple-300">{country.continent}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-300">{history.story}</p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center text-sm text-slate-400">
+              No nation-origin stories match your filters.
+            </p>
+          )}
+        </section>
       )}
 
       {/* TAB 2: INTERACTIVE ATLAS (Grid of All Nations) */}

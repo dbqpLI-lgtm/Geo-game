@@ -37,13 +37,14 @@ export const CountryOutlineShape: React.FC<CountryOutlineShapeProps> = ({ countr
       [0, 0]
     );
     const mainCenter = centerOf(mainRing);
-    const relevantRings = polygonsWithArea
-      .filter(({ ring, area }) => {
-        if (area < largestArea * 0.001) return false;
-        const center = centerOf(ring);
-        return Math.hypot(center[0] - mainCenter[0], center[1] - mainCenter[1]) < 25;
-      })
-      .map(({ ring }) => ring);
+    const relevantRings = (country?.code === 'TV'
+      ? polygonsWithArea
+      : polygonsWithArea.filter(({ ring, area }) => {
+          if (area < largestArea * 0.001) return false;
+          const center = centerOf(ring);
+          return Math.hypot(center[0] - mainCenter[0], center[1] - mainCenter[1]) < 25;
+        })
+    ).map(({ ring }) => ring);
 
     const allPoints = relevantRings.flat();
     const latCenter = (Math.min(...allPoints.map((point) => point[1]))

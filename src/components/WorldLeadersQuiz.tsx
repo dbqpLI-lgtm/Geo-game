@@ -29,6 +29,7 @@ import { COUNTRIES_WITH_LEADERS, CountryLeadersData, LeaderItem } from '../data/
 import { ALL_197_COUNTRIES } from '../data/all197Countries';
 import { FlagImage } from './FlagImage';
 import { useGameSettings } from '../context/GameSettingsContext';
+import { matchesLeaderFirstAndLastName } from '../utils/leaderNameMatching';
 
 interface WorldLeadersQuizProps {
   onEarnXP: (amount: number) => void;
@@ -84,6 +85,11 @@ function normalizeStr(text: string): string {
     .replace(/[\u0300-\u036f]/g, '') // remove accents
     .replace(/[^a-z0-9]/g, '') // remove spaces and punctuation
     .trim();
+}
+
+function getLeaderSurname(name: string): string {
+  const nameParts = name.trim().split(/\s+/);
+  return nameParts[nameParts.length - 1] ?? '';
 }
 
 export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) => {
@@ -291,22 +297,39 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
       if (!targetLeader) return;
 
       const matches =
-        normalizeStr(targetLeader.name) === cleaned ||
-        targetLeader.aliases.some((alias) => normalizeStr(alias) === cleaned);
+        (difficulty === 'hard'
+          ? matchesLeaderFirstAndLastName(rawInput, targetLeader.name)
+          : normalizeStr(targetLeader.name) === cleaned ||
+            normalizeStr(getLeaderSurname(targetLeader.name)) === cleaned) ||
+        (difficulty !== 'hard' && targetLeader.aliases.some((alias) => normalizeStr(alias) === cleaned));
 
       if (matches) {
-        // Success
-        handleLeaderGuessed(targetLeader);
+        const leadersWithSurname = activeCountryData.leaders.filter(
+          (leader) =>
+            normalizeStr(getLeaderSurname(leader.name)) ===
+            normalizeStr(getLeaderSurname(targetLeader.name))
+        );
+        const leadersToGuess =
+          difficulty !== 'hard' &&
+          normalizeStr(getLeaderSurname(targetLeader.name)) === cleaned &&
+          leadersWithSurname.length > 1
+            ? leadersWithSurname
+            : [targetLeader];
+
+        handleLeadersGuessed(leadersToGuess);
         setInputText('');
-        // Move to next unrevealed
+        const guessedAfterAnswer = new Set(guessedNumbers);
+        leadersToGuess.forEach((leader) => guessedAfterAnswer.add(leader.number));
         let nextIdx = currentChronoIndex + 1;
         while (
           nextIdx < activeCountryData.leaders.length &&
-          guessedNumbers.has(activeCountryData.leaders[nextIdx].number)
+          guessedAfterAnswer.has(activeCountryData.leaders[nextIdx].number)
         ) {
           nextIdx++;
         }
         setCurrentChronoIndex(nextIdx);
+      } else if (difficulty === 'hard') {
+        setDisambiguationMessage('Hard mode requires the leader’s full first and last name.');
       }
       return;
     }
@@ -317,10 +340,15 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
     );
 
     const matchedLeaders = candidates.filter((leader) => {
-      // Check full name exact normalized
-      if (normalizeStr(leader.name) === cleaned) return true;
-      // Check aliases
-      if (leader.aliases.some((alias) => normalizeStr(alias) === cleaned)) return true;
+      if (
+        difficulty === 'hard' &&
+        matchesLeaderFirstAndLastName(rawInput, leader.name)
+      ) return true;
+      if (
+        difficulty !== 'hard' &&
+        (normalizeStr(leader.name) === cleaned || normalizeStr(getLeaderSurname(leader.name)) === cleaned)
+      ) return true;
+      if (difficulty !== 'hard' && leader.aliases.some((alias) => normalizeStr(alias) === cleaned)) return true;
       return false;
     });
 
@@ -329,21 +357,42 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
       handleLeaderGuessed(leader);
       setInputText('');
     } else if (matchedLeaders.length > 1) {
-      // Ambiguous (e.g. "Roosevelt" or "Bush" or "Johnson" or "Trudeau")
-      const names = matchedLeaders.map((m) => m.name).join(', ');
-      setDisambiguationMessage(
-        `Multiple leaders match ("${rawInput}"): ${names}. Try specifying first name or popular initials (e.g. "Teddy", "FDR", "W. Bush")!`
-      );
+      const surnames = matchedLeaders.map((leader) => {
+        return normalizeStr(getLeaderSurname(leader.name));
+      });
+      const inputIsSharedSurname =
+        difficulty !== 'hard' &&
+        new Set(surnames).size === 1 &&
+        surnames[0] === cleaned;
+
+      if (inputIsSharedSurname) {
+        handleLeadersGuessed(matchedLeaders);
+        setInputText('');
+      } else {
+        const names = matchedLeaders.map((leader) => leader.name).join(', ');
+        setDisambiguationMessage(
+          `Multiple leaders match ("${rawInput}"): ${names}. Enter a full name to distinguish them.`
+        );
+      }
+    } else if (difficulty === 'hard') {
+      setDisambiguationMessage('Hard mode requires the leader’s full first and last name.');
     }
   };
 
   // Handle a successfully matched leader
   const handleLeaderGuessed = (leader: LeaderItem) => {
+    handleLeadersGuessed([leader]);
+  };
+
+  const handleLeadersGuessed = (leaders: LeaderItem[]) => {
+    const newlyGuessedLeaders = leaders.filter((leader) => !guessedNumbers.has(leader.number));
+    if (newlyGuessedLeaders.length === 0) return;
+
     const updatedGuessed = new Set(guessedNumbers);
-    updatedGuessed.add(leader.number);
+    newlyGuessedLeaders.forEach((leader) => updatedGuessed.add(leader.number));
     setGuessedNumbers(updatedGuessed);
-    setLastGuessedLeader(leader);
-    setStreak((prev) => prev + 1);
+    setLastGuessedLeader(newlyGuessedLeaders[newlyGuessedLeaders.length - 1]);
+    setStreak((prev) => prev + newlyGuessedLeaders.length);
 
     if (soundEnabled) {
       playAudioTone('correct');
@@ -769,7 +818,10 @@ export const WorldLeadersQuiz: React.FC<WorldLeadersQuizProps> = ({ onEarnXP }) 
           {/* Game Controls: Give Up */}
           <div className="flex items-center justify-between pt-2">
             <div className="text-xs text-slate-500">
-              Tip: Type surnames or full names. Accents and punctuation are ignored.
+              {difficulty === 'hard'
+                ? 'Hard mode requires each leader’s full first and last name.'
+                : 'Type a surname or full name. A shared surname guesses every leader with that surname.'}{' '}
+              Accents and punctuation are ignored.
             </div>
             <button
               onClick={handleGiveUp}

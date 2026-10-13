@@ -1,9 +1,10 @@
-import React, { Suspense, useState, useEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useRef, useMemo } from 'react';
 import { Globe2, Search, Trophy, CheckCircle2, HelpCircle, Sparkles, Filter, Clock, RotateCcw, Info, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ALL_197_COUNTRIES, CountryFullItem } from '../data/all197Countries';
 import { useGameSettings } from '../context/GameSettingsContext';
 import { getCurrencyDisplayName } from '../utils/currencyName';
+import { selectCountryQuizPool } from '../utils/countryQuizPool';
 import { FlagImage } from './FlagImage';
 
 const CountryDiscoveryMap = React.lazy(() =>
@@ -30,15 +31,28 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Filter countries by continent
-  const availableCountries = ALL_197_COUNTRIES.filter((c) => {
-    if (selectedContinent === 'All') return true;
-    if (selectedContinent === 'Americas') return c.continent === 'North America' || c.continent === 'South America';
-    return c.continent === selectedContinent;
-  });
+  const availableCountries = useMemo(() => {
+    const regionCountries = ALL_197_COUNTRIES.filter((country) => {
+      if (selectedContinent === 'All') return true;
+      if (selectedContinent === 'Americas') {
+        return country.continent === 'North America' || country.continent === 'South America';
+      }
+      return country.continent === selectedContinent;
+    });
+    return selectCountryQuizPool(regionCountries, difficulty);
+  }, [selectedContinent, difficulty]);
 
   const totalCount = availableCountries.length;
   const foundCount = availableCountries.filter((c) => foundCountries.has(c.code)).length;
   const progressPercent = Math.round((foundCount / totalCount) * 100) || 0;
+
+  useEffect(() => {
+    setFoundCountries(new Set());
+    setIsRevealed(false);
+    setIsGameActive(false);
+    setInputGuess('');
+    setTimeLeft(defaultSeconds);
+  }, [difficulty]);
 
   // Timer logic
   useEffect(() => {
@@ -154,7 +168,7 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
                 <button
                   key={cont}
                   onClick={() => {
-                    setSelectedContinent(cont === 'Americas' ? 'North America' : cont);
+                    setSelectedContinent(cont);
                     setFoundCountries(new Set());
                     setIsRevealed(false);
                   }}
@@ -278,9 +292,11 @@ export const CountryNamingQuiz: React.FC<CountryNamingQuizProps> = ({ onEarnXP }
                 ) : (
                   <span className="text-2xl">🌐</span>
                 )}
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-white/5">
-                  {country.code}
-                </span>
+                {difficulty === 'easy' && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-white/5">
+                    {country.code}
+                  </span>
+                )}
               </div>
 
               <div className="font-bold text-xs truncate">

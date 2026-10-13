@@ -22,9 +22,13 @@ import { FlagSprintQuiz } from './components/FlagSprintQuiz';
 import { PhysicalGeoQuiz } from './components/PhysicalGeoQuiz';
 import { GovernmentLeadersQuiz } from './components/GovernmentLeadersQuiz';
 import { AICustomQuiz } from './components/AICustomQuiz';
+import { WarHistoryQuiz } from './components/WarHistoryQuiz';
 
 const CityLocationQuiz = React.lazy(() =>
   import('./components/CityLocationQuiz').then((module) => ({ default: module.CityLocationQuiz }))
+);
+const WorldFeaturesQuiz = React.lazy(() =>
+  import('./components/WorldFeaturesQuiz').then((module) => ({ default: module.WorldFeaturesQuiz }))
 );
 import { WorldLeadersQuiz } from './components/WorldLeadersQuiz';
 import {
@@ -44,6 +48,8 @@ import {
   LogIn,
   BookOpen,
   Crown,
+  Swords,
+  Waves,
 } from 'lucide-react';
 
 function AppContent() {
@@ -202,12 +208,28 @@ function AppContent() {
       activeBorder: 'border-rose-500 bg-rose-950/30',
     },
     {
+      id: 'world-features',
+      label: 'Seas & Monuments',
+      desc: 'Fill the map with oceans & landmarks',
+      icon: <Waves className="w-5 h-5 text-cyan-400" />,
+      color: 'hover:border-cyan-500/50',
+      activeBorder: 'border-cyan-500 bg-cyan-950/30',
+    },
+    {
       id: 'physical-geo',
       label: 'Physical Wonders',
       desc: 'Rivers, Peaks & Deserts',
       icon: <Mountain className="w-5 h-5 text-cyan-400" />,
       color: 'hover:border-cyan-500/50',
       activeBorder: 'border-cyan-500 bg-cyan-950/30',
+    },
+    {
+      id: 'war-history',
+      label: 'War History',
+      desc: 'Who fought & when',
+      icon: <Swords className="w-5 h-5 text-rose-400" />,
+      color: 'hover:border-rose-500/50',
+      activeBorder: 'border-rose-500 bg-rose-950/30',
     },
     {
       id: 'government-leaders',
@@ -328,6 +350,12 @@ function AppContent() {
             {currentMode === 'states' && <StateNamingQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'flag-sprint' && <FlagSprintQuiz onEarnXP={handleEarnXP} />}
             {currentMode === 'physical-geo' && <PhysicalGeoQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'war-history' && <WarHistoryQuiz onEarnXP={handleEarnXP} />}
+            {currentMode === 'world-features' && (
+              <Suspense fallback={<div className="mx-auto h-[560px] max-w-6xl animate-pulse rounded-3xl border border-slate-800 bg-slate-900" />}>
+                <WorldFeaturesQuiz onEarnXP={handleEarnXP} />
+              </Suspense>
+            )}
             {currentMode === 'ai-custom' && <AICustomQuiz onEarnXP={handleEarnXP} />}
           </>
         )}
