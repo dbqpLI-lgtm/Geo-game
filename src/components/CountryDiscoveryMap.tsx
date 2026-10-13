@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Feature, Geometry } from 'geojson';
-import { CircleMarker, GeoJSON, MapContainer, TileLayer } from 'react-leaflet';
+import { GeoJSON, MapContainer, TileLayer } from 'react-leaflet';
 import { ALL_197_COUNTRIES } from '../data/all197Countries';
 import { countryBoundaries, getCountryBoundary } from '../data/worldCountryBoundaries';
 import 'leaflet/dist/leaflet.css';
@@ -56,31 +56,19 @@ export const CountryDiscoveryMap: React.FC<CountryDiscoveryMapProps> = ({
           zoom={2}
           minZoom={2}
           maxZoom={8}
-          worldCopyJump
+          maxBounds={[[-85.051129, -180], [85.051129, 180]]}
+          maxBoundsViscosity={1}
           className="h-full w-full bg-slate-200"
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            noWrap
           />
           <GeoJSON
             data={countryBoundaries}
             style={styleCountry}
           />
-          {discoveredCountryCodes.has('XK') && (
-            <CircleMarker
-              center={[42.66, 21.16]}
-              radius={6}
-              pathOptions={{ color: '#065f46', weight: 1, fillColor: '#10b981', fillOpacity: 1 }}
-            />
-          )}
-          {discoveredCountryCodes.has('TV') && (
-            <CircleMarker
-              center={[-7.1, 177.65]}
-              radius={6}
-              pathOptions={{ color: '#065f46', weight: 1, fillColor: '#10b981', fillOpacity: 1 }}
-            />
-          )}
         </MapContainer>
       </div>
     </section>
